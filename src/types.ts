@@ -236,3 +236,16 @@ export interface CreateArticlePayload {
     approach: string
   }
 }
+
+export interface CreateThesisPayload {
+  title: string
+  titleEn: string
+  author: string
+  supervisor: string
+  institution: string
+  department: string
+  degree: 'Master' | 'PhD'
+  abstractZh: string
+  abstractEn: string
+  keywords: string[]
+}
