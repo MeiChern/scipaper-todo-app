@@ -205,7 +205,7 @@ export function ThesisWizard({ open, busy, onClose, onSubmit }: ThesisWizardProp
                     value={keywordInput}
                     onChange={(e) => setKeywordInput(e.target.value)}
                     placeholder="输入关键词后按添加"
-                    onKeyPress={(e) => e.key === 'Enter' && addKeyword()}
+                    onKeyDown={(e) => e.key === 'Enter' && addKeyword()}
                   />
                   <button className="ghost-button" onClick={addKeyword} type="button">
                     添加
