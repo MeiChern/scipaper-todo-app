@@ -215,10 +215,14 @@ function registerIpc() {
     const payload = getPreviewPayload(articleId, blockId);
 
     if (payload.previewKind === 'tiff' || payload.previewKind === 'pdf') {
-      return {
-        ...payload,
-        bufferBase64: fs.readFileSync(payload.path).toString('base64'),
-      };
+      try {
+        return {
+          ...payload,
+          bufferBase64: fs.readFileSync(payload.path).toString('base64'),
+        };
+      } catch {
+        return { ...payload, error: 'File not found or unreadable' };
+      }
     }
 
     return payload;
