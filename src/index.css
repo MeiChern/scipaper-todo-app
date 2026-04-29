@@ -988,6 +988,84 @@ ul {
   height: 12px;
 }
 
+.outline-view {
+  min-height: 300px;
+}
+
+.outline-tree {
+  margin-top: 12px;
+}
+
+.outline-article {
+  margin-bottom: 8px;
+}
+
+.outline-article-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.outline-article-header:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.outline-article-header.selected {
+  background: var(--accent-soft);
+  border-left: 3px solid var(--accent);
+}
+
+.outline-toggle {
+  font-size: 0.75rem;
+  color: var(--muted);
+  width: 16px;
+}
+
+.outline-title {
+  flex: 1;
+  font-weight: 500;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.outline-meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.outline-sections {
+  margin-left: 24px;
+  border-left: 2px solid var(--line);
+}
+
+.outline-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.outline-section:hover {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.outline-section-type {
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+
+.outline-section-summary {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
 .search-panel {
   min-height: 300px;
 }
