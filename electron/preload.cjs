@@ -56,6 +56,8 @@ contextBridge.exposeInMainWorld('scipaper', {
   // Tag operations
   addTag: (articleId, tagName, tagColor) => ipcRenderer.invoke('tag:add', { articleId, tagName, tagColor }),
   removeTag: (articleId, tagId) => ipcRenderer.invoke('tag:remove', { articleId, tagId }),
+  // Citation operations
+  addCitation: (articleId, citation) => ipcRenderer.invoke('citation:add', { articleId, citation }),
   // Export operations
   exportToHTML: (articleId) => ipcRenderer.invoke('export:html', { articleId }),
   exportToJSON: (articleId) => ipcRenderer.invoke('export:json', { articleId }),

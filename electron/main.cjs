@@ -34,6 +34,7 @@ const {
   getTheme,
   setTheme,
   getWritingStats,
+  addCitation,
   addTag,
   removeTag,
   exportToHTML,
@@ -366,6 +367,14 @@ function registerIpc() {
     return getWritingStats();
   });
 
+  // Citation operations
+  ipcMain.handle(
+    'citation:add',
+    wrapStateMutation(async (_event, { articleId, citation }) => {
+      addCitation(articleId, citation);
+    }),
+  );
+
   // Tag operations
   ipcMain.handle(
     'tag:add',
@@ -383,21 +392,36 @@ function registerIpc() {
 
   // Export operations
   ipcMain.handle('export:html', async (_event, { articleId }) => {
-    const exportPath = exportToHTML(articleId);
-    await shell.showItemInFolder(exportPath);
-    return exportPath;
+    try {
+      const exportPath = exportToHTML(articleId);
+      await shell.showItemInFolder(exportPath);
+      return exportPath;
+    } catch (error) {
+      console.error('Export HTML failed:', error);
+      throw error;
+    }
   });
 
   ipcMain.handle('export:json', async (_event, { articleId }) => {
-    const exportPath = exportToJSON(articleId);
-    await shell.showItemInFolder(exportPath);
-    return exportPath;
+    try {
+      const exportPath = exportToJSON(articleId);
+      await shell.showItemInFolder(exportPath);
+      return exportPath;
+    } catch (error) {
+      console.error('Export JSON failed:', error);
+      throw error;
+    }
   });
 
   ipcMain.handle('export:share', async (_event, { articleId }) => {
-    const shareDir = createSharePackage(articleId);
-    await shell.showItemInFolder(shareDir);
-    return shareDir;
+    try {
+      const shareDir = createSharePackage(articleId);
+      await shell.showItemInFolder(shareDir);
+      return shareDir;
+    } catch (error) {
+      console.error('Create share package failed:', error);
+      throw error;
+    }
   });
 }
 

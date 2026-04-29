@@ -284,17 +284,35 @@ function App() {
 
   async function handleExportHTML() {
     if (!selectedArticle) return
-    await window.scipaper.exportToHTML(selectedArticle.id)
+    try {
+      await window.scipaper.exportToHTML(selectedArticle.id)
+      setNotice('HTML 导出成功')
+    } catch (error) {
+      console.error(error)
+      setNotice(error instanceof Error ? error.message : 'HTML 导出失败')
+    }
   }
 
   async function handleExportJSON() {
     if (!selectedArticle) return
-    await window.scipaper.exportToJSON(selectedArticle.id)
+    try {
+      await window.scipaper.exportToJSON(selectedArticle.id)
+      setNotice('JSON 导出成功')
+    } catch (error) {
+      console.error(error)
+      setNotice(error instanceof Error ? error.message : 'JSON 导出失败')
+    }
   }
 
   async function handleCreateSharePackage() {
     if (!selectedArticle) return
-    await window.scipaper.createSharePackage(selectedArticle.id)
+    try {
+      await window.scipaper.createSharePackage(selectedArticle.id)
+      setNotice('分享包创建成功')
+    } catch (error) {
+      console.error(error)
+      setNotice(error instanceof Error ? error.message : '分享包创建失败')
+    }
   }
 
   const activeSection =
@@ -331,13 +349,6 @@ function App() {
               type="button"
             >
               🔍 全文搜索
-            </button>
-            <button 
-              className="ghost-button full-width" 
-              onClick={() => setActiveTab('Stats')}
-              type="button"
-            >
-              📊 写作统计
             </button>
             <button 
               className="ghost-button full-width" 

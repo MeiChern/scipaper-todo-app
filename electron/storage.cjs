@@ -81,10 +81,11 @@ function ensureStore() {
           lastWriteDate: null,
           totalWritingDays: 0,
           todayWords: 0,
-          dailyGoal: 500,
-          streakHistory: [],
-        },
-      }, null, 2),
+        dailyGoal: 500,
+        streakHistory: [],
+        moodHistory: [],
+      },
+    }, null, 2),
       'utf-8',
     );
   }
@@ -172,6 +173,7 @@ function normalizeStoredDatabase(data) {
       todayWords: 0,
       dailyGoal: 500,
       streakHistory: [],
+      moodHistory: data.writingStreak?.moodHistory ?? [],
     },
     pomodoroSessions: data.pomodoroSessions ?? [],
   };
@@ -239,6 +241,7 @@ function createArticle(input) {
     sections: SECTION_TYPES.map((type, index) => createSection(type, index)),
     reviewRounds: [],
     citations: [],
+    tags: [],
   };
 
   database.articles.unshift(article);
@@ -334,15 +337,9 @@ function linkArticleToThesis(thesisId, articleId) {
   const thesis = findThesis(database, thesisId);
   const article = findArticle(database, articleId);
 
-  if (!thesis.linkedArticles) {
-    thesis.linkedArticles = [];
+  if (!thesis.articleIds.includes(articleId)) {
+    thesis.articleIds.push(articleId);
   }
-
-  if (thesis.linkedArticles.includes(articleId)) {
-    return;
-  }
-
-  thesis.linkedArticles.push(articleId);
   touchThesis(thesis);
 
   writeDatabase(database);
@@ -352,11 +349,7 @@ function unlinkArticleFromThesis(thesisId, articleId) {
   const database = readDatabase();
   const thesis = findThesis(database, thesisId);
 
-  if (!thesis.linkedArticles) {
-    return;
-  }
-
-  thesis.linkedArticles = thesis.linkedArticles.filter((id) => id !== articleId);
+  thesis.articleIds = thesis.articleIds.filter((id) => id !== articleId);
   touchThesis(thesis);
 
   writeDatabase(database);
@@ -1280,11 +1273,20 @@ function exportToHTML(articleId) {
 
   const stamp = new Date().toISOString().replace(/[:.]/g, '-');
 
+  function escapeHtml(text) {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   let html = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>${article.title}</title>
+  <title>${escapeHtml(article.title)}</title>
   <style>
     body { font-family: 'Songti SC', 'SimSun', serif; max-width: 800px; margin: 0 auto; padding: 40px; line-height: 1.8; }
     h1 { font-size: 24px; text-align: center; margin-bottom: 40px; }
@@ -1294,10 +1296,10 @@ function exportToHTML(articleId) {
   </style>
 </head>
 <body>
-  <h1>${article.title}</h1>
+  <h1>${escapeHtml(article.title)}</h1>
   <div class="meta">
-    <p>目标期刊: ${article.targetJournal || '未填写'}</p>
-    <p>状态: ${article.status}</p>
+    <p>目标期刊: ${escapeHtml(article.targetJournal || '未填写')}</p>
+    <p>状态: ${escapeHtml(article.status)}</p>
   </div>
 `;
 
@@ -1312,13 +1314,13 @@ function exportToHTML(articleId) {
       'References': '参考文献'
     }[section.type] || section.type;
 
-    html += `  <h2>${sectionTitle}</h2>\n`;
+    html += `  <h2>${escapeHtml(sectionTitle)}</h2>\n`;
 
     section.contentBlocks.forEach(block => {
       if (block.type === 'Text') {
-        html += `  <p>${block.content}</p>\n`;
+        html += `  <p>${escapeHtml(block.content)}</p>\n`;
       } else if (block.type === 'Image') {
-        html += `  <p><img src="${block.content}" alt="${block.description || '图片'}" style="max-width: 100%;"></p>\n`;
+        html += `  <p><img src="${escapeHtml(block.content)}" alt="${escapeHtml(block.description || '图片')}" style="max-width: 100%;"></p>\n`;
       }
     });
   });
