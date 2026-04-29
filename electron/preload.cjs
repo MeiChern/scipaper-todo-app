@@ -42,4 +42,10 @@ contextBridge.exposeInMainWorld('scipaper', {
   // Writing streak operations
   getWritingStreak: () => ipcRenderer.invoke('streak:get'),
   updateDailyGoal: (goal) => ipcRenderer.invoke('streak:updateGoal', { goal }),
+  // Mood tracking operations
+  addMoodEntry: (mood, note) => ipcRenderer.invoke('mood:add', { mood, note }),
+  getMoodHistory: () => ipcRenderer.invoke('mood:getHistory'),
+  // Pomodoro operations
+  addPomodoroSession: (duration, articleId, sectionType) => ipcRenderer.invoke('pomodoro:addSession', { duration, articleId, sectionType }),
+  getPomodoroStats: () => ipcRenderer.invoke('pomodoro:getStats'),
 });

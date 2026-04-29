@@ -26,6 +26,10 @@ const {
   linkArticleToThesis,
   unlinkArticleFromThesis,
   updateDailyGoal,
+  addMoodEntry,
+  getMoodHistory,
+  addPomodoroSession,
+  getPomodoroStats,
   BASE_DIRECTORY,
 } = require('./storage.cjs');
 const { startMcpServer } = require('./mcp-server.cjs');
@@ -312,6 +316,30 @@ function registerIpc() {
       updateDailyGoal(goal);
     }),
   );
+
+  // Mood tracking operations
+  ipcMain.handle(
+    'mood:add',
+    wrapStateMutation(async (_event, { mood, note }) => {
+      addMoodEntry(mood, note);
+    }),
+  );
+
+  ipcMain.handle('mood:getHistory', async () => {
+    return getMoodHistory();
+  });
+
+  // Pomodoro operations
+  ipcMain.handle(
+    'pomodoro:addSession',
+    wrapStateMutation(async (_event, { duration, articleId, sectionType }) => {
+      addPomodoroSession(duration, articleId, sectionType);
+    }),
+  );
+
+  ipcMain.handle('pomodoro:getStats', async () => {
+    return getPomodoroStats();
+  });
 }
 
 async function startApplication() {
