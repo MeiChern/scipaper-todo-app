@@ -14,16 +14,19 @@ export function searchInContent(
   
   // Search in articles
   articles.forEach(article => {
+    const articleTitleLower = article.title.toLowerCase()
+    
     // Search in title
-    if (article.title.toLowerCase().includes(normalizedQuery)) {
+    if (articleTitleLower.includes(normalizedQuery)) {
+      const matchIndex = articleTitleLower.indexOf(normalizedQuery)
       results.push({
         id: article.id,
         type: 'article',
         title: article.title,
         sectionType: 'Title',
         content: article.title,
-        matchStart: article.title.toLowerCase().indexOf(normalizedQuery),
-        matchEnd: article.title.toLowerCase().indexOf(normalizedQuery) + normalizedQuery.length,
+        matchStart: matchIndex,
+        matchEnd: matchIndex + normalizedQuery.length,
         snippet: getSnippet(article.title, normalizedQuery)
       })
     }
@@ -31,17 +34,21 @@ export function searchInContent(
     // Search in sections
     article.sections.forEach(section => {
       section.contentBlocks.forEach(block => {
-        if (block.type === 'Text' && block.content.toLowerCase().includes(normalizedQuery)) {
-          results.push({
-            id: block.id,
-            type: 'article',
-            title: article.title,
-            sectionType: section.type,
-            content: block.content,
-            matchStart: block.content.toLowerCase().indexOf(normalizedQuery),
-            matchEnd: block.content.toLowerCase().indexOf(normalizedQuery) + normalizedQuery.length,
-            snippet: getSnippet(block.content, normalizedQuery)
-          })
+        if (block.type === 'Text') {
+          const blockContentLower = block.content.toLowerCase()
+          if (blockContentLower.includes(normalizedQuery)) {
+            const matchIndex = blockContentLower.indexOf(normalizedQuery)
+            results.push({
+              id: block.id,
+              type: 'article',
+              title: article.title,
+              sectionType: section.type,
+              content: block.content,
+              matchStart: matchIndex,
+              matchEnd: matchIndex + normalizedQuery.length,
+              snippet: getSnippet(block.content, normalizedQuery)
+            })
+          }
         }
       })
     })
@@ -55,33 +62,40 @@ export function searchInContent(
     ]
     
     contextFields.forEach(field => {
-      if (field && field.toLowerCase().includes(normalizedQuery)) {
-        results.push({
-          id: article.id + '-context',
-          type: 'article',
-          title: article.title,
-          sectionType: 'Research Context',
-          content: field,
-          matchStart: field.toLowerCase().indexOf(normalizedQuery),
-          matchEnd: field.toLowerCase().indexOf(normalizedQuery) + normalizedQuery.length,
-          snippet: getSnippet(field, normalizedQuery)
-        })
+      if (field) {
+        const fieldLower = field.toLowerCase()
+        if (fieldLower.includes(normalizedQuery)) {
+          const matchIndex = fieldLower.indexOf(normalizedQuery)
+          results.push({
+            id: article.id + '-context',
+            type: 'article',
+            title: article.title,
+            sectionType: 'Research Context',
+            content: field,
+            matchStart: matchIndex,
+            matchEnd: matchIndex + normalizedQuery.length,
+            snippet: getSnippet(field, normalizedQuery)
+          })
+        }
       }
     })
   })
   
   // Search in theses
   theses.forEach(thesis => {
+    const thesisTitleLower = thesis.title.toLowerCase()
+    
     // Search in title
-    if (thesis.title.toLowerCase().includes(normalizedQuery)) {
+    if (thesisTitleLower.includes(normalizedQuery)) {
+      const matchIndex = thesisTitleLower.indexOf(normalizedQuery)
       results.push({
         id: thesis.id,
         type: 'thesis',
         title: thesis.title,
         sectionType: 'Title',
         content: thesis.title,
-        matchStart: thesis.title.toLowerCase().indexOf(normalizedQuery),
-        matchEnd: thesis.title.toLowerCase().indexOf(normalizedQuery) + normalizedQuery.length,
+        matchStart: matchIndex,
+        matchEnd: matchIndex + normalizedQuery.length,
         snippet: getSnippet(thesis.title, normalizedQuery)
       })
     }
@@ -89,17 +103,21 @@ export function searchInContent(
     // Search in sections
     thesis.sections.forEach(section => {
       section.contentBlocks.forEach(block => {
-        if (block.type === 'Text' && block.content.toLowerCase().includes(normalizedQuery)) {
-          results.push({
-            id: block.id,
-            type: 'thesis',
-            title: thesis.title,
-            sectionType: section.title || section.type,
-            content: block.content,
-            matchStart: block.content.toLowerCase().indexOf(normalizedQuery),
-            matchEnd: block.content.toLowerCase().indexOf(normalizedQuery) + normalizedQuery.length,
-            snippet: getSnippet(block.content, normalizedQuery)
-          })
+        if (block.type === 'Text') {
+          const blockContentLower = block.content.toLowerCase()
+          if (blockContentLower.includes(normalizedQuery)) {
+            const matchIndex = blockContentLower.indexOf(normalizedQuery)
+            results.push({
+              id: block.id,
+              type: 'thesis',
+              title: thesis.title,
+              sectionType: section.title || section.type,
+              content: block.content,
+              matchStart: matchIndex,
+              matchEnd: matchIndex + normalizedQuery.length,
+              snippet: getSnippet(block.content, normalizedQuery)
+            })
+          }
         }
       })
     })
