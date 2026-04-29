@@ -173,6 +173,7 @@ function normalizeStoredDatabase(data) {
       dailyGoal: 500,
       streakHistory: [],
     },
+    pomodoroSessions: data.pomodoroSessions ?? [],
   };
 }
 
@@ -502,6 +503,87 @@ function enrichArticle(article) {
   };
 }
 
+function addMoodEntry(mood, note = '') {
+  const database = readDatabase();
+  const today = new Date().toISOString().split('T')[0];
+  
+  if (!database.writingStreak.moodHistory) {
+    database.writingStreak.moodHistory = [];
+  }
+  
+  database.writingStreak.moodHistory.push({
+    id: createId(),
+    date: today,
+    mood,
+    note: normalizeText(note),
+    createdAt: now()
+  });
+  
+  // Keep only last 365 days
+  const oneYearAgo = new Date(Date.now() - 365 * 86400000).toISOString().split('T')[0];
+  database.writingStreak.moodHistory = database.writingStreak.moodHistory.filter(
+    entry => entry.date >= oneYearAgo
+  );
+  
+  writeDatabase(database);
+  return database.writingStreak;
+}
+
+function getMoodHistory() {
+  const database = readDatabase();
+  return database.writingStreak.moodHistory || [];
+}
+
+function addPomodoroSession(duration, articleId = '', sectionType = '') {
+  const database = readDatabase();
+  const today = new Date().toISOString().split('T')[0];
+  
+  if (!database.pomodoroSessions) {
+    database.pomodoroSessions = [];
+  }
+  
+  const session = {
+    id: createId(),
+    startTime: new Date(Date.now() - duration * 60000).toISOString(),
+    endTime: now(),
+    duration,
+    completed: true,
+    articleId: normalizeText(articleId),
+    sectionType: normalizeText(sectionType)
+  };
+  
+  database.pomodoroSessions.push(session);
+  
+  // Keep only last 365 days
+  const oneYearAgo = new Date(Date.now() - 365 * 86400000).toISOString().split('T')[0];
+  database.pomodoroSessions = database.pomodoroSessions.filter(
+    s => s.startTime >= oneYearAgo
+  );
+  
+  writeDatabase(database);
+  return session;
+}
+
+function getPomodoroStats() {
+  const database = readDatabase();
+  const sessions = database.pomodoroSessions || [];
+  const today = new Date().toISOString().split('T')[0];
+  
+  const todaySessions = sessions.filter(s => s.startTime.startsWith(today));
+  const todayMinutes = todaySessions.reduce((sum, s) => sum + s.duration, 0);
+  const totalSessions = sessions.length;
+  const totalMinutes = sessions.reduce((sum, s) => sum + s.duration, 0);
+  
+  return {
+    todaySessions: todaySessions.length,
+    todayMinutes,
+    totalSessions,
+    totalMinutes,
+    currentStreak: 0,
+    longestStreak: 0
+  };
+}
+
 function loadState() {
   const database = readDatabase();
 
@@ -513,6 +595,7 @@ function loadState() {
     theses: [...database.theses]
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)),
     writingStreak: database.writingStreak,
+    pomodoroStats: getPomodoroStats()
   };
 }
 
@@ -1115,4 +1198,8 @@ module.exports = {
   linkArticleToThesis,
   unlinkArticleFromThesis,
   updateDailyGoal,
+  addMoodEntry,
+  getMoodHistory,
+  addPomodoroSession,
+  getPomodoroStats,
 };
