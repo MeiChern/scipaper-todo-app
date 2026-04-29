@@ -131,7 +131,7 @@ function App() {
       targetJournal: selectedArticle.targetJournal,
       status: selectedArticle.status,
     })
-  }, [selectedArticle?.id, selectedArticle?.title, selectedArticle?.targetJournal, selectedArticle?.status])
+  }, [selectedArticle?.id])
 
   const filteredArticles =
     state?.articles.filter((article) => {
