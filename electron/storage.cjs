@@ -1266,6 +1266,135 @@ function getSectionByArticle(articleId, sectionType) {
   return findSection(article, sectionType);
 }
 
+function exportToHTML(articleId) {
+  const database = readDatabase();
+  const article = database.articles.find(a => a.id === articleId);
+
+  if (!article) {
+    throw new Error('Article not found');
+  }
+
+  const articleRoot = path.join(ARTICLES_DIRECTORY, articleId);
+  const exportDir = path.join(articleRoot, 'Exports');
+  fs.mkdirSync(exportDir, { recursive: true });
+
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+
+  let html = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>${article.title}</title>
+  <style>
+    body { font-family: 'Songti SC', 'SimSun', serif; max-width: 800px; margin: 0 auto; padding: 40px; line-height: 1.8; }
+    h1 { font-size: 24px; text-align: center; margin-bottom: 40px; }
+    h2 { font-size: 18px; margin-top: 30px; border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+    p { margin: 16px 0; text-indent: 2em; }
+    .meta { color: #666; font-size: 14px; margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+  <h1>${article.title}</h1>
+  <div class="meta">
+    <p>目标期刊: ${article.targetJournal || '未填写'}</p>
+    <p>状态: ${article.status}</p>
+  </div>
+`;
+
+  article.sections.forEach(section => {
+    const sectionTitle = {
+      'Title': '标题',
+      'Abstract': '摘要',
+      'Introduction': '前言',
+      'MaterialsAndMethods': '材料与方法',
+      'Results': '结果',
+      'Discussion': '讨论',
+      'References': '参考文献'
+    }[section.type] || section.type;
+
+    html += `  <h2>${sectionTitle}</h2>\n`;
+
+    section.contentBlocks.forEach(block => {
+      if (block.type === 'Text') {
+        html += `  <p>${block.content}</p>\n`;
+      } else if (block.type === 'Image') {
+        html += `  <p><img src="${block.content}" alt="${block.description || '图片'}" style="max-width: 100%;"></p>\n`;
+      }
+    });
+  });
+
+  html += `</body>\n</html>`;
+
+  const exportPath = path.join(exportDir, `${article.title.replace(/[^\w\u4e00-\u9fa5-]+/g, '-') || 'manuscript'}-${stamp}.html`);
+  fs.writeFileSync(exportPath, html, 'utf-8');
+
+  return exportPath;
+}
+
+function exportToJSON(articleId) {
+  const database = readDatabase();
+  const article = database.articles.find(a => a.id === articleId);
+
+  if (!article) {
+    throw new Error('Article not found');
+  }
+
+  const articleRoot = path.join(ARTICLES_DIRECTORY, articleId);
+  const exportDir = path.join(articleRoot, 'Exports');
+  fs.mkdirSync(exportDir, { recursive: true });
+
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const exportPath = path.join(exportDir, `${article.title.replace(/[^\w\u4e00-\u9fa5-]+/g, '-') || 'manuscript'}-${stamp}.json`);
+
+  fs.writeFileSync(exportPath, JSON.stringify(article, null, 2), 'utf-8');
+
+  return exportPath;
+}
+
+function createSharePackage(articleId) {
+  const database = readDatabase();
+  const article = database.articles.find(a => a.id === articleId);
+
+  if (!article) {
+    throw new Error('Article not found');
+  }
+
+  const articleRoot = path.join(ARTICLES_DIRECTORY, articleId);
+  const exportDir = path.join(articleRoot, 'Exports');
+  fs.mkdirSync(exportDir, { recursive: true });
+
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const shareDir = path.join(exportDir, `share-${stamp}`);
+  fs.mkdirSync(shareDir, { recursive: true });
+
+  fs.writeFileSync(
+    path.join(shareDir, 'article.json'),
+    JSON.stringify(article, null, 2),
+    'utf-8'
+  );
+
+  const attachmentsDir = path.join(articleRoot, 'Attachments');
+  if (fs.existsSync(attachmentsDir)) {
+    const shareAttachmentsDir = path.join(shareDir, 'Attachments');
+    fs.mkdirSync(shareAttachmentsDir, { recursive: true });
+
+    fs.readdirSync(attachmentsDir).forEach(file => {
+      fs.copyFileSync(
+        path.join(attachmentsDir, file),
+        path.join(shareAttachmentsDir, file)
+      );
+    });
+  }
+
+  fs.writeFileSync(
+    path.join(shareDir, 'README.md'),
+    `# ${article.title}\n\n导出时间: ${new Date().toLocaleString('zh-CN')}\n\n本目录包含论文数据和附件。`,
+    'utf-8'
+  );
+
+  return shareDir;
+}
+
 module.exports = {
   SECTION_TYPES,
   ARTICLE_STATUSES,
@@ -1315,4 +1444,7 @@ module.exports = {
   getWritingStats,
   addTag,
   removeTag,
+  exportToHTML,
+  exportToJSON,
+  createSharePackage,
 };

@@ -36,6 +36,9 @@ const {
   getWritingStats,
   addTag,
   removeTag,
+  exportToHTML,
+  exportToJSON,
+  createSharePackage,
 } = require('./storage.cjs');
 const { startMcpServer } = require('./mcp-server.cjs');
 
@@ -377,6 +380,25 @@ function registerIpc() {
       removeTag(articleId, tagId);
     }),
   );
+
+  // Export operations
+  ipcMain.handle('export:html', async (_event, { articleId }) => {
+    const exportPath = exportToHTML(articleId);
+    await shell.showItemInFolder(exportPath);
+    return exportPath;
+  });
+
+  ipcMain.handle('export:json', async (_event, { articleId }) => {
+    const exportPath = exportToJSON(articleId);
+    await shell.showItemInFolder(exportPath);
+    return exportPath;
+  });
+
+  ipcMain.handle('export:share', async (_event, { articleId }) => {
+    const shareDir = createSharePackage(articleId);
+    await shell.showItemInFolder(shareDir);
+    return shareDir;
+  });
 }
 
 async function startApplication() {
