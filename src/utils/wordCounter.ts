@@ -44,12 +44,16 @@ function processSections(
 
 export function countWords(text: string): number {
   if (!text || text.trim().length === 0) return 0
-  
-  // Remove extra whitespace and split by spaces
-  const words = text.trim().split(/\s+/)
-  
-  // Filter out empty strings
-  return words.filter(word => word.length > 0).length
+
+  // Count Chinese characters individually + English words
+  const chineseChars = text.match(/[\u4e00-\u9fa5]/g)
+  const chineseCount = chineseChars ? chineseChars.length : 0
+
+  // Remove Chinese characters and count remaining English words
+  const withoutChinese = text.replace(/[\u4e00-\u9fa5]/g, ' ')
+  const englishWords = withoutChinese.trim().split(/\s+/).filter(word => word.length > 0)
+
+  return chineseCount + englishWords.length
 }
 
 export function countChineseChars(text: string): number {

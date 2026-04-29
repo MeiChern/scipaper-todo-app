@@ -73,7 +73,7 @@ export function ThesisWizard({ open, busy, onClose, onSubmit }: ThesisWizardProp
   }
 
   const canAdvance =
-    step === 0 ||
+    (step === 0 && form.title.trim()) ||
     (step === 1 && form.author.trim() && form.supervisor.trim()) ||
     (step === 2 && form.institution.trim() && form.department.trim()) ||
     step === 3 ||
