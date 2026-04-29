@@ -249,3 +249,17 @@ export interface CreateThesisPayload {
   abstractEn: string
   keywords: string[]
 }
+
+export interface UpdateThesisPayload {
+  title?: string
+  titleEn?: string
+  author?: string
+  supervisor?: string
+  institution?: string
+  department?: string
+  degree?: 'Master' | 'PhD'
+  status?: ThesisStatus
+  abstractZh?: string
+  abstractEn?: string
+  keywords?: string[]
+}

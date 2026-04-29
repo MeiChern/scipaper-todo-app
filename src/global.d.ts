@@ -1,4 +1,4 @@
-import type { AppState, ArticleStatus, BlockPreview, CreateArticlePayload, McpInfo, SectionType, WritingStreak } from './types'
+import type { AppState, ArticleStatus, BlockPreview, CreateArticlePayload, CreateThesisPayload, McpInfo, SectionType, UpdateThesisPayload, WritingStreak } from './types'
 
 declare global {
   interface Window {
@@ -76,8 +76,8 @@ declare global {
       onStateChanged: (listener: () => void) => () => void
 
       // Thesis operations
-      createThesis: (payload: any) => Promise<AppState>
-      updateThesisMeta: (thesisId: string, patch: any) => Promise<AppState>
+      createThesis: (payload: CreateThesisPayload) => Promise<AppState>
+      updateThesisMeta: (thesisId: string, patch: UpdateThesisPayload) => Promise<AppState>
       addThesisSection: (thesisId: string, sectionType: string, title: string) => Promise<AppState>
       linkArticleToThesis: (thesisId: string, articleId: string) => Promise<AppState>
       unlinkArticleFromThesis: (thesisId: string, articleId: string) => Promise<AppState>
