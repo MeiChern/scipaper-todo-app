@@ -142,8 +142,18 @@ function getSnippet(content: string, query: string, contextLength: number = 50):
 }
 
 export function highlightMatches(text: string, query: string): string {
-  if (!query) return text
+  if (!query) return escapeHtml(text)
   
+  const escaped = escapeHtml(text)
   const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
-  return text.replace(regex, '<mark>$1</mark>')
+  return escaped.replace(regex, '<mark>$1</mark>')
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }

@@ -58,7 +58,7 @@ export function WritingStreak({ streak, onUpdateGoal }: WritingStreakProps) {
           <div 
             className="progress-fill"
             style={{ 
-              width: `${Math.min(100, (streak.todayWords / streak.dailyGoal) * 100)}%` 
+              width: `${Math.min(100, streak.dailyGoal > 0 ? (streak.todayWords / streak.dailyGoal) * 100 : 0)}%` 
             }}
           />
         </div>

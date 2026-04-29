@@ -461,6 +461,11 @@ function App() {
                             setSelectedArticleId(article.id)
                             setActiveTab('Introduction')
                           }
+                        } else if (result.type === 'thesis') {
+                          const thesis = state?.theses.find(t => t.id === result.id)
+                          if (thesis) {
+                            setActiveThesisId(thesis.id)
+                          }
                         }
                       }}
                     />
