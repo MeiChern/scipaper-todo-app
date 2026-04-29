@@ -42,6 +42,26 @@ export type BlockType = 'Text' | 'Image' | 'FileLink'
 export type ReviewCommentType = 'Major' | 'Minor'
 export type CommentStatus = 'Pending' | 'InProgress' | 'Completed' | 'Disagreed'
 
+export type MoodType =
+  | 'Happy'
+  | 'Calm'
+  | 'Sad'
+  | 'Frustrated'
+  | 'Anxious'
+  | 'Excited'
+  | 'Tired'
+  | 'Grateful'
+  | 'Motivated'
+  | 'Melancholy'
+
+export interface MoodEntry {
+  id: string
+  date: string
+  mood: MoodType
+  note?: string
+  createdAt: string
+}
+
 export interface ContentBlockVersion {
   id: string
   content: string
@@ -185,6 +205,7 @@ export interface WritingStreak {
     words: number
     goalMet: boolean
   }[]
+  moodHistory: MoodEntry[]
 }
 
 export interface SearchResult {
