@@ -219,11 +219,31 @@ export interface SearchResult {
   snippet: string
 }
 
+export interface PomodoroSession {
+  id: string
+  startTime: string
+  endTime: string
+  duration: number // in minutes
+  completed: boolean
+  articleId?: string
+  sectionType?: string
+}
+
+export interface PomodoroStats {
+  todaySessions: number
+  todayMinutes: number
+  totalSessions: number
+  totalMinutes: number
+  currentStreak: number
+  longestStreak: number
+}
+
 export interface AppState {
   baseDirectory: string
   articles: Article[]
   theses: Thesis[]
   writingStreak: WritingStreak
+  pomodoroStats: PomodoroStats
 }
 
 export interface McpInfo {
