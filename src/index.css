@@ -15,6 +15,12 @@
   --heading: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', 'Songti SC', serif;
   --sans: 'Avenir Next', 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
   --mono: 'Cascadia Code', 'SFMono-Regular', Consolas, monospace;
+  --streak-badge-from: #ff9a56;
+  --streak-badge-to: #ff6b35;
+  --streak-badge-text: white;
+  --streak-goal-met: #4caf50;
+  --streak-progress-from: #b47b59;
+  --streak-progress-to: #8e6249;
   color: var(--ink);
   font-family: var(--sans);
   font-size: 16px;
@@ -389,7 +395,7 @@ ul {
 }
 
 .primary-button {
-  background: linear-gradient(135deg, #b47b59, #8e6249);
+  background: linear-gradient(135deg, var(--streak-progress-from), var(--streak-progress-to));
   color: #fff9f2;
   box-shadow: 0 12px 24px rgba(142, 98, 73, 0.18);
 }
@@ -835,9 +841,9 @@ ul {
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: linear-gradient(135deg, #ff9a56, #ff6b35);
+  background: linear-gradient(135deg, var(--streak-badge-from), var(--streak-badge-to));
   border-radius: 20px;
-  color: white;
+  color: var(--streak-badge-text);
 }
 
 .streak-flame {
@@ -903,14 +909,14 @@ ul {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #b47b59, #8e6249);
+  background: linear-gradient(90deg, var(--streak-progress-from), var(--streak-progress-to));
   border-radius: 4px;
   transition: width 0.3s ease;
 }
 
 .goal-met {
   margin-top: 8px;
-  color: #4caf50;
+  color: var(--streak-goal-met);
   font-size: 0.9rem;
   text-align: center;
 }
