@@ -62,6 +62,7 @@ function App() {
   const [notice, setNotice] = useState('')
   const [wizardOpen, setWizardOpen] = useState(false)
   const [thesisWizardOpen, setThesisWizardOpen] = useState(false)
+  const [activeThesisId, setActiveThesisId] = useState<string | null>(null)
   const [metaDraft, setMetaDraft] = useState({
     title: '',
     targetJournal: '',
