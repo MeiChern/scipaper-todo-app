@@ -1,6 +1,10 @@
 import { useDeferredValue, useEffect, useState } from 'react'
 import { ArticleWizard } from './components/ArticleWizard'
+import { CitationManager } from './components/CitationManager'
 import { McpPanel } from './components/McpPanel'
+import { MoodTracker } from './components/MoodTracker'
+import { OutlineView } from './components/OutlineView'
+import { PomodoroTimer } from './components/PomodoroTimer'
 import { ResearchContextPanel } from './components/ResearchContextPanel'
 import { ReviewPanel } from './components/ReviewPanel'
 import { SearchPanel } from './components/SearchPanel'
@@ -8,7 +12,8 @@ import { SectionEditor } from './components/SectionEditor'
 import { ThesisWizard } from './components/ThesisWizard'
 import { WordCountStats } from './components/WordCountStats'
 import { WritingStreak } from './components/WritingStreak'
-import type { AppState, ArticleStatus, CreateArticlePayload, CreateThesisPayload, McpInfo, SearchResult, SectionType } from './types'
+import type { AppState, ArticleStatus, CreateArticlePayload, CreateThesisPayload, McpInfo, MoodType, SearchResult, SectionType } from './types'
+import type { BibTeXEntry } from './utils/bibtexParser'
 import { getWordCountStats } from './utils/wordCounter'
 
 const SECTION_LABELS: Record<SectionType, string> = {
@@ -21,7 +26,7 @@ const SECTION_LABELS: Record<SectionType, string> = {
   References: '参考文献',
 }
 
-type WorkspaceTab = SectionType | 'ResearchContext' | 'Review' | 'Mcp' | 'Search' | 'Stats'
+type WorkspaceTab = SectionType | 'ResearchContext' | 'Review' | 'Mcp' | 'Search' | 'Stats' | 'Mood' | 'Pomodoro' | 'Outline' | 'Citations'
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -207,8 +212,30 @@ function App() {
     )
   }
 
+  async function handleAddMood(mood: MoodType, note?: string) {
+    await mutate(async () => {
+      const nextState = await window.scipaper.addMoodEntry(mood, note)
+      return nextState
+    }, '心情已记录')
+  }
+
+  async function handleAddPomodoro(duration: number) {
+    await mutate(async () => {
+      const nextState = await window.scipaper.addPomodoroSession(duration)
+      return nextState
+    }, '番茄钟已完成')
+  }
+
+  async function handleAddCitation(citation: BibTeXEntry) {
+    if (!selectedArticle) return
+    await mutate(async () => {
+      const nextState = await window.scipaper.addCitation(selectedArticle.id, citation)
+      return nextState
+    }, '参考文献已添加')
+  }
+
   const activeSection =
-    selectedArticle && !['ResearchContext', 'Review', 'Mcp', 'Search', 'Stats'].includes(activeTab)
+    selectedArticle && !['ResearchContext', 'Review', 'Mcp', 'Search', 'Stats', 'Mood', 'Pomodoro', 'Outline', 'Citations'].includes(activeTab)
       ? selectedArticle.sections.find((section) => section.type === activeTab)
       : null
 
@@ -248,6 +275,27 @@ function App() {
               type="button"
             >
               📊 写作统计
+            </button>
+            <button 
+              className="ghost-button full-width" 
+              onClick={() => setActiveTab('Mood')}
+              type="button"
+            >
+              😊 心情追踪
+            </button>
+            <button 
+              className="ghost-button full-width" 
+              onClick={() => setActiveTab('Pomodoro')}
+              type="button"
+            >
+              🍅 番茄钟
+            </button>
+            <button 
+              className="ghost-button full-width" 
+              onClick={() => setActiveTab('Outline')}
+              type="button"
+            >
+              📋 大纲视图
             </button>
           </div>
 
@@ -371,6 +419,13 @@ function App() {
                   >
                     MCP 配置
                   </button>
+                  <button
+                    className={`nav-chip utility ${activeTab === 'Citations' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('Citations')}
+                    type="button"
+                  >
+                    参考文献
+                  </button>
                 </nav>
 
                 <section className="content-stage">
@@ -474,12 +529,45 @@ function App() {
                     <div className="panel-stack">
                       <WordCountStats stats={getWordCountStats(state?.articles ?? [], state?.theses ?? [], new Date().toISOString().split('T')[0])} />
                       <WritingStreak 
-                        streak={state?.writingStreak ?? { currentStreak: 0, longestStreak: 0, totalWritingDays: 0, todayWords: 0, dailyGoal: 500, lastWriteDate: '', streakHistory: [] }} 
+                        streak={state?.writingStreak ?? { currentStreak: 0, longestStreak: 0, totalWritingDays: 0, todayWords: 0, dailyGoal: 500, lastWriteDate: '', streakHistory: [], moodHistory: [] }} 
                         onUpdateGoal={async (goal) => {
                           await mutate(() => window.scipaper.updateDailyGoal(goal))
                         }}
                       />
                     </div>
+                  ) : null}
+
+                  {activeTab === 'Mood' ? (
+                    <MoodTracker 
+                      moodHistory={state?.writingStreak?.moodHistory ?? []} 
+                      onAddMood={handleAddMood}
+                    />
+                  ) : null}
+
+                  {activeTab === 'Pomodoro' ? (
+                    <PomodoroTimer 
+                      stats={state?.pomodoroStats ?? { todaySessions: 0, todayMinutes: 0, totalSessions: 0, totalMinutes: 0, currentStreak: 0, longestStreak: 0 }} 
+                      onAddSession={handleAddPomodoro}
+                    />
+                  ) : null}
+
+                  {activeTab === 'Outline' ? (
+                    <OutlineView 
+                      articles={state?.articles ?? []}
+                      selectedArticleId={selectedArticleId}
+                      onSelectArticle={(id) => {
+                        setSelectedArticleId(id)
+                        setActiveTab('Introduction')
+                      }}
+                      onSelectSection={(type) => setActiveTab(type as SectionType)}
+                    />
+                  ) : null}
+
+                  {activeTab === 'Citations' && selectedArticle ? (
+                    <CitationManager 
+                      article={selectedArticle}
+                      onAddCitation={handleAddCitation}
+                    />
                   ) : null}
                 </section>
               </div>

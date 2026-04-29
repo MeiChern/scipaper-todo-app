@@ -1,4 +1,5 @@
-import type { AppState, ArticleStatus, BlockPreview, CreateArticlePayload, CreateThesisPayload, McpInfo, SectionType, UpdateThesisPayload, WritingStreak } from './types'
+import type { AppState, ArticleStatus, BlockPreview, CreateArticlePayload, CreateThesisPayload, McpInfo, MoodType, SectionType, UpdateThesisPayload, WritingStreak } from './types'
+import type { BibTeXEntry } from './utils/bibtexParser'
 
 declare global {
   interface Window {
@@ -85,6 +86,15 @@ declare global {
       // Writing streak operations
       getWritingStreak: () => Promise<WritingStreak>
       updateDailyGoal: (goal: number) => Promise<AppState>
+
+      // Mood tracking operations
+      addMoodEntry: (mood: MoodType, note?: string) => Promise<AppState>
+
+      // Pomodoro operations
+      addPomodoroSession: (duration: number) => Promise<AppState>
+
+      // Citation operations
+      addCitation: (articleId: string, citation: BibTeXEntry) => Promise<AppState>
     }
   }
 }

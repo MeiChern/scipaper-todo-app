@@ -106,7 +106,8 @@ export function updateStreakHistory(
     todayWords,
     dailyGoal,
     lastWriteDate: today,
-    streakHistory: filteredHistory
+    streakHistory: filteredHistory,
+    moodHistory: []
   }
 }
 

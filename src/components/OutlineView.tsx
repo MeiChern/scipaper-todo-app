@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Article, Section, ContentBlock } from '../types'
+import type { Article, Section } from '../types'
 
 interface OutlineViewProps {
   articles: Article[]

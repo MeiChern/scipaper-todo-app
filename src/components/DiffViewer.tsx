@@ -67,7 +67,7 @@ export function DiffViewer({ versions, currentContent }: DiffViewerProps) {
       ) : (
         <>
           <div className="version-list">
-            {versions.slice(0, 5).map((version, index) => (
+            {versions.slice(0, 5).map((version) => (
               <div 
                 key={version.id} 
                 className={`version-item ${selectedVersion?.id === version.id ? 'selected' : ''}`}
