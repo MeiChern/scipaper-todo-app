@@ -271,6 +271,94 @@ function createThesis(input) {
   return thesis;
 }
 
+function findThesis(database, thesisId) {
+  const thesis = database.theses.find((item) => item.id === thesisId);
+
+  if (!thesis) {
+    throw new Error('Thesis not found');
+  }
+
+  return thesis;
+}
+
+function touchThesis(thesis) {
+  thesis.updatedAt = now();
+}
+
+function updateThesisMeta(thesisId, patch) {
+  const database = readDatabase();
+  const thesis = findThesis(database, thesisId);
+
+  thesis.title = normalizeText(patch.title) || thesis.title;
+  thesis.degree = DEGREE_TYPES.includes(patch.degree) ? patch.degree : thesis.degree;
+  thesis.university = normalizeText(patch.university) || thesis.university;
+  thesis.department = normalizeText(patch.department) || thesis.department;
+  thesis.studentName = normalizeText(patch.studentName) || thesis.studentName;
+  thesis.supervisorName = normalizeText(patch.supervisorName) || thesis.supervisorName;
+  thesis.status = THESIS_STATUSES.includes(patch.status) ? patch.status : thesis.status;
+  touchThesis(thesis);
+
+  writeDatabase(database);
+}
+
+function addThesisSection(thesisId, sectionType, title) {
+  const database = readDatabase();
+  const thesis = findThesis(database, thesisId);
+
+  if (!THESIS_SECTION_TYPES.includes(sectionType)) {
+    throw new Error(`Invalid thesis section type: ${sectionType}`);
+  }
+
+  const section = createSection(sectionType, thesis.sections.length);
+  section.title = normalizeText(title) || sectionType;
+  thesis.sections.push(section);
+  touchThesis(thesis);
+
+  writeDatabase(database);
+}
+
+function linkArticleToThesis(thesisId, articleId) {
+  const database = readDatabase();
+  const thesis = findThesis(database, thesisId);
+  const article = findArticle(database, articleId);
+
+  if (!thesis.linkedArticles) {
+    thesis.linkedArticles = [];
+  }
+
+  if (thesis.linkedArticles.includes(articleId)) {
+    return;
+  }
+
+  thesis.linkedArticles.push(articleId);
+  touchThesis(thesis);
+
+  writeDatabase(database);
+}
+
+function unlinkArticleFromThesis(thesisId, articleId) {
+  const database = readDatabase();
+  const thesis = findThesis(database, thesisId);
+
+  if (!thesis.linkedArticles) {
+    return;
+  }
+
+  thesis.linkedArticles = thesis.linkedArticles.filter((id) => id !== articleId);
+  touchThesis(thesis);
+
+  writeDatabase(database);
+}
+
+function updateDailyGoal(goal) {
+  const database = readDatabase();
+
+  if (typeof goal === 'number' && goal > 0) {
+    database.writingStreak.dailyGoal = goal;
+    writeDatabase(database);
+  }
+}
+
 function updateWritingStreak(wordCount) {
   const database = readDatabase();
   const streak = database.writingStreak;
@@ -998,4 +1086,9 @@ module.exports = {
   getArticleById,
   getSectionByArticle,
   getMcpResourceOverview,
+  updateThesisMeta,
+  addThesisSection,
+  linkArticleToThesis,
+  unlinkArticleFromThesis,
+  updateDailyGoal,
 };
