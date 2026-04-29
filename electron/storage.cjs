@@ -584,6 +584,113 @@ function getPomodoroStats() {
   };
 }
 
+function getTheme() {
+  const database = readDatabase();
+  return database.theme || 'light';
+}
+
+function setTheme(theme) {
+  const database = readDatabase();
+  database.theme = theme;
+  writeDatabase(database);
+  return database;
+}
+
+function getWritingStats() {
+  const database = readDatabase();
+  const articles = database.articles || [];
+  
+  let totalWords = 0;
+  let totalChars = 0;
+  const wordFrequency = {};
+  const sectionStats = {};
+  
+  articles.forEach(article => {
+    article.sections.forEach(section => {
+      section.contentBlocks.forEach(block => {
+        if (block.type === 'Text') {
+          const words = block.content.split(/\s+/).filter(w => w.length > 0);
+          totalWords += words.length;
+          totalChars += block.content.length;
+          
+          words.forEach(word => {
+            const lower = word.toLowerCase();
+            wordFrequency[lower] = (wordFrequency[lower] || 0) + 1;
+          });
+          
+          const sectionType = section.type;
+          sectionStats[sectionType] = (sectionStats[sectionType] || 0) + words.length;
+        }
+      });
+    });
+  });
+  
+  const mostUsedWords = Object.entries(wordFrequency)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 20)
+    .map(([word, count]) => ({ word, count }));
+  
+  const topSections = Object.entries(sectionStats)
+    .sort((a, b) => b[1] - a[1])
+    .map(([section, words]) => ({ section, words }));
+  
+  return {
+    totalArticles: articles.length,
+    totalWords,
+    totalChars,
+    averageWordsPerArticle: articles.length > 0 ? Math.round(totalWords / articles.length) : 0,
+    mostUsedWords,
+    sentenceLengthDistribution: [],
+    writingFrequency: [],
+    topSections
+  };
+}
+
+function addTag(articleId, tagName, tagColor) {
+  const database = readDatabase();
+  const article = database.articles.find(a => a.id === articleId);
+  
+  if (!article) {
+    throw new Error('Article not found');
+  }
+  
+  if (!article.tags) {
+    article.tags = [];
+  }
+  
+  const existingTag = article.tags.find(t => t.name === tagName);
+  if (existingTag) {
+    return article.tags;
+  }
+  
+  article.tags.push({
+    id: createId(),
+    name: tagName,
+    color: tagColor || '#a56f4f',
+    createdAt: now()
+  });
+  
+  writeDatabase(database);
+  return article.tags;
+}
+
+function removeTag(articleId, tagId) {
+  const database = readDatabase();
+  const article = database.articles.find(a => a.id === articleId);
+  
+  if (!article) {
+    throw new Error('Article not found');
+  }
+  
+  if (!article.tags) {
+    article.tags = [];
+  }
+  
+  article.tags = article.tags.filter(t => t.id !== tagId);
+  writeDatabase(database);
+  return article.tags;
+}
+
 function loadState() {
   const database = readDatabase();
 
@@ -595,7 +702,8 @@ function loadState() {
     theses: [...database.theses]
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)),
     writingStreak: database.writingStreak,
-    pomodoroStats: getPomodoroStats()
+    pomodoroStats: getPomodoroStats(),
+    theme: database.theme || 'light'
   };
 }
 
@@ -1202,4 +1310,9 @@ module.exports = {
   getMoodHistory,
   addPomodoroSession,
   getPomodoroStats,
+  getTheme,
+  setTheme,
+  getWritingStats,
+  addTag,
+  removeTag,
 };

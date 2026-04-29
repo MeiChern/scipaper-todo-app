@@ -31,6 +31,11 @@ const {
   addPomodoroSession,
   getPomodoroStats,
   BASE_DIRECTORY,
+  getTheme,
+  setTheme,
+  getWritingStats,
+  addTag,
+  removeTag,
 } = require('./storage.cjs');
 const { startMcpServer } = require('./mcp-server.cjs');
 
@@ -340,6 +345,38 @@ function registerIpc() {
   ipcMain.handle('pomodoro:getStats', async () => {
     return getPomodoroStats();
   });
+
+  // Theme operations
+  ipcMain.handle('theme:get', async () => {
+    return getTheme();
+  });
+
+  ipcMain.handle(
+    'theme:set',
+    wrapStateMutation(async (_event, { theme }) => {
+      setTheme(theme);
+    }),
+  );
+
+  // Writing stats
+  ipcMain.handle('stats:get', async () => {
+    return getWritingStats();
+  });
+
+  // Tag operations
+  ipcMain.handle(
+    'tag:add',
+    wrapStateMutation(async (_event, { articleId, tagName, tagColor }) => {
+      addTag(articleId, tagName, tagColor);
+    }),
+  );
+
+  ipcMain.handle(
+    'tag:remove',
+    wrapStateMutation(async (_event, { articleId, tagId }) => {
+      removeTag(articleId, tagId);
+    }),
+  );
 }
 
 async function startApplication() {

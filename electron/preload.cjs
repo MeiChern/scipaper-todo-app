@@ -48,4 +48,12 @@ contextBridge.exposeInMainWorld('scipaper', {
   // Pomodoro operations
   addPomodoroSession: (duration, articleId, sectionType) => ipcRenderer.invoke('pomodoro:addSession', { duration, articleId, sectionType }),
   getPomodoroStats: () => ipcRenderer.invoke('pomodoro:getStats'),
+  // Theme operations
+  getTheme: () => ipcRenderer.invoke('theme:get'),
+  setTheme: (theme) => ipcRenderer.invoke('theme:set', { theme }),
+  // Writing stats
+  getWritingStats: () => ipcRenderer.invoke('stats:get'),
+  // Tag operations
+  addTag: (articleId, tagName, tagColor) => ipcRenderer.invoke('tag:add', { articleId, tagName, tagColor }),
+  removeTag: (articleId, tagId) => ipcRenderer.invoke('tag:remove', { articleId, tagId }),
 });
