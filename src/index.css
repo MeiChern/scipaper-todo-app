@@ -1820,3 +1820,34 @@ ul {
   text-align: center;
   padding: 20px;
 }
+
+.share-info {
+  margin: 16px 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.share-preview {
+  margin: 16px 0;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+}
+
+.share-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+
+.share-item:not(:last-child) {
+  border-bottom: 1px solid rgba(116, 89, 59, 0.08);
+}
+
+.share-icon {
+  font-size: 1.2rem;
+}
