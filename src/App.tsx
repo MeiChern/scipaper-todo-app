@@ -12,7 +12,12 @@ import { SectionEditor } from './components/SectionEditor'
 import { ThesisWizard } from './components/ThesisWizard'
 import { WordCountStats } from './components/WordCountStats'
 import { WritingStreak } from './components/WritingStreak'
-import type { AppState, ArticleStatus, CreateArticlePayload, CreateThesisPayload, McpInfo, MoodType, SearchResult, SectionType } from './types'
+import { WritingStats } from './components/WritingStats'
+import { ThemeSwitcher } from './components/ThemeSwitcher'
+import { ExportPanel } from './components/ExportPanel'
+import { TagManager } from './components/TagManager'
+import { SharePanel } from './components/SharePanel'
+import type { AppState, ArticleStatus, CreateArticlePayload, CreateThesisPayload, McpInfo, MoodType, SearchResult, SectionType, TagColor, ThemeType, WritingStats as WritingStatsType } from './types'
 import type { BibTeXEntry } from './utils/bibtexParser'
 import { getWordCountStats } from './utils/wordCounter'
 
@@ -26,7 +31,7 @@ const SECTION_LABELS: Record<SectionType, string> = {
   References: '参考文献',
 }
 
-type WorkspaceTab = SectionType | 'ResearchContext' | 'Review' | 'Mcp' | 'Search' | 'Stats' | 'Mood' | 'Pomodoro' | 'Outline' | 'Citations'
+type WorkspaceTab = SectionType | 'ResearchContext' | 'Review' | 'Mcp' | 'Search' | 'Stats' | 'Mood' | 'Pomodoro' | 'Outline' | 'Citations' | 'Export' | 'Tags' | 'Share' | 'Theme' | 'WritingStats'
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -68,6 +73,8 @@ function App() {
   const [wizardOpen, setWizardOpen] = useState(false)
   const [thesisWizardOpen, setThesisWizardOpen] = useState(false)
   const [, setActiveThesisId] = useState<string | null>(null)
+  const [theme, setTheme] = useState<ThemeType>('light')
+  const [writingStats, setWritingStats] = useState<WritingStatsType | null>(null)
   const [metaDraft, setMetaDraft] = useState({
     title: '',
     targetJournal: '',
@@ -105,6 +112,18 @@ function App() {
   }, [])
 
   useEffect(() => {
+    async function loadThemeAndStats() {
+      const [currentTheme, stats] = await Promise.all([
+        window.scipaper.getTheme(),
+        window.scipaper.getWritingStats()
+      ])
+      setTheme(currentTheme)
+      setWritingStats(stats)
+    }
+    loadThemeAndStats()
+  }, [])
+
+  useEffect(() => {
     const unsubscribe = window.scipaper.onStateChanged(() => {
       refreshStateSilently().catch((error) => {
         console.error(error)
@@ -122,6 +141,10 @@ function App() {
     const timer = window.setTimeout(() => setNotice(''), 3200)
     return () => window.clearTimeout(timer)
   }, [notice])
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+  }, [theme])
 
   const selectedArticle = state?.articles.find((article) => article.id === selectedArticleId) ?? null
 
@@ -234,8 +257,48 @@ function App() {
     }, '参考文献已添加')
   }
 
+  async function handleThemeChange(newTheme: ThemeType) {
+    await mutate(async () => {
+      const nextState = await window.scipaper.setTheme(newTheme)
+      setTheme(newTheme)
+      document.documentElement.setAttribute('data-theme', newTheme)
+      return nextState
+    }, '主题已切换')
+  }
+
+  async function handleAddTag(tagName: string, tagColor: TagColor) {
+    if (!selectedArticle) return
+    await mutate(async () => {
+      const nextState = await window.scipaper.addTag(selectedArticle.id, tagName, tagColor)
+      return nextState
+    }, '标签已添加')
+  }
+
+  async function handleRemoveTag(tagId: string) {
+    if (!selectedArticle) return
+    await mutate(async () => {
+      const nextState = await window.scipaper.removeTag(selectedArticle.id, tagId)
+      return nextState
+    }, '标签已删除')
+  }
+
+  async function handleExportHTML() {
+    if (!selectedArticle) return
+    await window.scipaper.exportToHTML(selectedArticle.id)
+  }
+
+  async function handleExportJSON() {
+    if (!selectedArticle) return
+    await window.scipaper.exportToJSON(selectedArticle.id)
+  }
+
+  async function handleCreateSharePackage() {
+    if (!selectedArticle) return
+    await window.scipaper.createSharePackage(selectedArticle.id)
+  }
+
   const activeSection =
-    selectedArticle && !['ResearchContext', 'Review', 'Mcp', 'Search', 'Stats', 'Mood', 'Pomodoro', 'Outline', 'Citations'].includes(activeTab)
+    selectedArticle && !['ResearchContext', 'Review', 'Mcp', 'Search', 'Stats', 'Mood', 'Pomodoro', 'Outline', 'Citations', 'Export', 'Tags', 'Share', 'Theme', 'WritingStats'].includes(activeTab)
       ? selectedArticle.sections.find((section) => section.type === activeTab)
       : null
 
@@ -296,6 +359,41 @@ function App() {
               type="button"
             >
               📋 大纲视图
+            </button>
+            <button 
+              className="ghost-button full-width" 
+              onClick={() => setActiveTab('WritingStats')}
+              type="button"
+            >
+              📊 写作统计
+            </button>
+            <button 
+              className="ghost-button full-width" 
+              onClick={() => setActiveTab('Theme')}
+              type="button"
+            >
+              🎨 主题切换
+            </button>
+            <button 
+              className="ghost-button full-width" 
+              onClick={() => setActiveTab('Export')}
+              type="button"
+            >
+              📤 导出文章
+            </button>
+            <button 
+              className="ghost-button full-width" 
+              onClick={() => setActiveTab('Tags')}
+              type="button"
+            >
+              🏷️ 标签管理
+            </button>
+            <button 
+              className="ghost-button full-width" 
+              onClick={() => setActiveTab('Share')}
+              type="button"
+            >
+              🔗 分享文章
             </button>
           </div>
 
@@ -567,6 +665,42 @@ function App() {
                     <CitationManager 
                       article={selectedArticle}
                       onAddCitation={handleAddCitation}
+                    />
+                  ) : null}
+
+                  {activeTab === 'WritingStats' && writingStats ? (
+                    <WritingStats stats={writingStats} />
+                  ) : null}
+
+                  {activeTab === 'Theme' ? (
+                    <ThemeSwitcher 
+                      currentTheme={theme}
+                      onThemeChange={handleThemeChange}
+                    />
+                  ) : null}
+
+                  {activeTab === 'Export' && selectedArticle ? (
+                    <ExportPanel 
+                      article={selectedArticle}
+                      onExportMarkdown={() => window.scipaper.exportMarkdown(selectedArticle.id)}
+                      onExportHTML={handleExportHTML}
+                      onExportJSON={handleExportJSON}
+                      onCreateSharePackage={handleCreateSharePackage}
+                    />
+                  ) : null}
+
+                  {activeTab === 'Tags' && selectedArticle ? (
+                    <TagManager 
+                      tags={selectedArticle.tags || []}
+                      onAddTag={handleAddTag}
+                      onRemoveTag={handleRemoveTag}
+                    />
+                  ) : null}
+
+                  {activeTab === 'Share' && selectedArticle ? (
+                    <SharePanel 
+                      article={selectedArticle}
+                      onCreateSharePackage={handleCreateSharePackage}
                     />
                   ) : null}
                 </section>
