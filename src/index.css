@@ -987,3 +987,80 @@ ul {
   width: 12px;
   height: 12px;
 }
+
+.search-panel {
+  min-height: 300px;
+}
+
+.search-results {
+  margin-top: 16px;
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+.search-results-count {
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.search-result-item {
+  padding: 12px;
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.search-result-item:hover {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.result-header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.result-type {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.result-type.article {
+  background: rgba(165, 111, 79, 0.15);
+  color: var(--accent-strong);
+}
+
+.result-type.thesis {
+  background: rgba(100, 100, 200, 0.15);
+  color: #4a4a8a;
+}
+
+.result-section {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.result-title {
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.result-snippet {
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.result-snippet mark {
+  background: rgba(255, 200, 0, 0.4);
+  padding: 1px 2px;
+  border-radius: 2px;
+}
