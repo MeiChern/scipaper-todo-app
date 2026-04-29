@@ -138,11 +138,31 @@ export interface ReviewRound {
   comments: ReviewComment[]
 }
 
+export const TAG_COLORS = [
+  '#e74c3c', // Red
+  '#e67e22', // Orange
+  '#f1c40f', // Yellow
+  '#2ecc71', // Green
+  '#1abc9c', // Teal
+  '#3498db', // Blue
+  '#9b59b6', // Purple
+  '#e91e63', // Pink
+  '#607d8b', // Blue Grey
+  '#795548', // Brown
+] as const
+
+export type TagColor = typeof TAG_COLORS[number]
+
 export interface Tag {
   id: string
   name: string
-  color: string
+  color: TagColor
   createdAt: string
+}
+
+export interface TagFilter {
+  tags: Tag[]
+  matchMode: 'all' | 'any'
 }
 
 export interface Article {
