@@ -1,6 +1,6 @@
 // src/components/SearchPanel.tsx
 
-import { useState, useDeferredValue } from 'react'
+import { useState, useDeferredValue, useMemo } from 'react'
 import type { Article, Thesis, SearchResult } from '../types'
 import { searchInContent, highlightMatches } from '../utils/searchEngine'
 
@@ -12,18 +12,14 @@ interface SearchPanelProps {
 
 export function SearchPanel({ articles, theses, onSelectResult }: SearchPanelProps) {
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<SearchResult[]>([])
   const deferredQuery = useDeferredValue(query)
 
-  function handleSearch(value: string) {
-    setQuery(value)
-    if (value.trim().length >= 2) {
-      const searchResults = searchInContent(value, articles, theses)
-      setResults(searchResults)
-    } else {
-      setResults([])
+  const results = useMemo(() => {
+    if (deferredQuery.trim().length >= 2) {
+      return searchInContent(deferredQuery, articles, theses)
     }
-  }
+    return []
+  }, [deferredQuery, articles, theses])
 
   return (
     <section className="panel-card search-panel">
@@ -39,7 +35,7 @@ export function SearchPanel({ articles, theses, onSelectResult }: SearchPanelPro
         <input
           type="text"
           value={query}
-          onChange={(e) => handleSearch(e.target.value)}
+          onChange={(e) => setQuery(e.target.value)}
           placeholder="输入关键词搜索所有论文和学位论文..."
         />
       </label>
