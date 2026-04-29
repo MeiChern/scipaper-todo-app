@@ -138,6 +138,13 @@ export interface ReviewRound {
   comments: ReviewComment[]
 }
 
+export interface Tag {
+  id: string
+  name: string
+  color: string
+  createdAt: string
+}
+
 export interface Article {
   id: string
   title: string
@@ -149,6 +156,7 @@ export interface Article {
   sections: Section[]
   reviewRounds: ReviewRound[]
   citations: unknown[]
+  tags: Tag[]
 }
 
 export interface ThesisSection {
@@ -238,12 +246,26 @@ export interface PomodoroStats {
   longestStreak: number
 }
 
+export interface WritingStats {
+  totalArticles: number
+  totalWords: number
+  totalChars: number
+  averageWordsPerArticle: number
+  mostUsedWords: { word: string; count: number }[]
+  sentenceLengthDistribution: { range: string; count: number }[]
+  writingFrequency: { date: string; words: number }[]
+  topSections: { section: string; words: number }[]
+}
+
+export type ThemeType = 'light' | 'dark' | 'sepia' | 'green'
+
 export interface AppState {
   baseDirectory: string
   articles: Article[]
   theses: Thesis[]
   writingStreak: WritingStreak
   pomodoroStats: PomodoroStats
+  theme: ThemeType
 }
 
 export interface McpInfo {
