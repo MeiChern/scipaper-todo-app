@@ -6,7 +6,7 @@ interface SharePanelProps {
   onCreateSharePackage: () => Promise<void>
 }
 
-export function SharePanel({ article, onCreateSharePackage }: SharePanelProps) {
+export function SharePanel({ onCreateSharePackage }: SharePanelProps) {
   const [isCreating, setIsCreating] = useState(false)
 
   async function handleCreate() {

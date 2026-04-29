@@ -1,4 +1,4 @@
-import type { AppState, ArticleStatus, BlockPreview, CreateArticlePayload, CreateThesisPayload, McpInfo, MoodType, SectionType, UpdateThesisPayload, WritingStreak } from './types'
+import type { AppState, ArticleStatus, BlockPreview, CreateArticlePayload, CreateThesisPayload, McpInfo, MoodType, SectionType, ThemeType, UpdateThesisPayload, WritingStats, WritingStreak, TagColor } from './types'
 import type { BibTeXEntry } from './utils/bibtexParser'
 
 declare global {
@@ -95,6 +95,22 @@ declare global {
 
       // Citation operations
       addCitation: (articleId: string, citation: BibTeXEntry) => Promise<AppState>
+
+      // Theme operations
+      getTheme: () => Promise<ThemeType>
+      setTheme: (theme: ThemeType) => Promise<AppState>
+
+      // Writing stats
+      getWritingStats: () => Promise<WritingStats>
+
+      // Tag operations
+      addTag: (articleId: string, tagName: string, tagColor: TagColor) => Promise<AppState>
+      removeTag: (articleId: string, tagId: string) => Promise<AppState>
+
+      // Export operations
+      exportToHTML: (articleId: string) => Promise<string>
+      exportToJSON: (articleId: string) => Promise<string>
+      createSharePackage: (articleId: string) => Promise<string>
     }
   }
 }

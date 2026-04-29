@@ -8,7 +8,7 @@ interface ExportPanelProps {
   onCreateSharePackage: () => Promise<void>
 }
 
-export function ExportPanel({ article, onExportMarkdown, onExportHTML, onExportJSON, onCreateSharePackage }: ExportPanelProps) {
+export function ExportPanel({ onExportMarkdown, onExportHTML, onExportJSON, onCreateSharePackage }: ExportPanelProps) {
   return (
     <section className="panel-card">
       <div className="section-heading">
