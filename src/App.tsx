@@ -682,7 +682,7 @@ function App() {
                   {activeTab === 'Export' && selectedArticle ? (
                     <ExportPanel 
                       article={selectedArticle}
-                      onExportMarkdown={() => window.scipaper.exportMarkdown(selectedArticle.id)}
+                      onExportMarkdown={async () => { await window.scipaper.exportMarkdown(selectedArticle.id) }}
                       onExportHTML={handleExportHTML}
                       onExportJSON={handleExportJSON}
                       onCreateSharePackage={handleCreateSharePackage}
