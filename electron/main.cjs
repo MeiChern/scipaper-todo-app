@@ -18,7 +18,7 @@ const {
   updateArticleMeta,
   updateResearchContext,
   updateReviewCommentStatus,
-  updateTextBlock,
+  updateTextBlockWithStreak,
   createArticle,
   createThesis,
   updateThesisMeta,
@@ -169,7 +169,7 @@ function registerIpc() {
   ipcMain.handle(
     'block:updateText',
     wrapStateMutation(async (_event, { articleId, blockId, content, description }) => {
-      updateTextBlock(articleId, blockId, content, description);
+      updateTextBlockWithStreak(articleId, blockId, content, description);
     }),
   );
   ipcMain.handle(

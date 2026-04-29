@@ -79,9 +79,10 @@ function ensureStore() {
           currentStreak: 0,
           longestStreak: 0,
           lastWriteDate: null,
-          todayWordCount: 0,
-          totalWordCount: 0,
+          totalWritingDays: 0,
+          todayWords: 0,
           dailyGoal: 500,
+          streakHistory: [],
         },
       }, null, 2),
       'utf-8',
@@ -167,9 +168,10 @@ function normalizeStoredDatabase(data) {
       currentStreak: 0,
       longestStreak: 0,
       lastWriteDate: null,
-      todayWordCount: 0,
-      totalWordCount: 0,
+      totalWritingDays: 0,
+      todayWords: 0,
       dailyGoal: 500,
+      streakHistory: [],
     },
   };
 }
@@ -253,15 +255,20 @@ function createThesis(input) {
   const thesis = {
     id: thesisId,
     title: normalizeText(input.title) || '未命名论文',
-    degree: DEGREE_TYPES.includes(input.degree) ? input.degree : 'Master',
-    university: normalizeText(input.university),
+    titleEn: normalizeText(input.titleEn),
+    author: normalizeText(input.author),
+    supervisor: normalizeText(input.supervisor),
+    institution: normalizeText(input.institution),
     department: normalizeText(input.department),
-    studentName: normalizeText(input.studentName),
-    supervisorName: normalizeText(input.supervisorName),
+    degree: DEGREE_TYPES.includes(input.degree) ? input.degree : 'Master',
     status: THESIS_STATUSES.includes(input.status) ? input.status : 'Proposal',
     createdAt: timestamp,
     updatedAt: timestamp,
+    articleIds: input.articleIds ?? [],
     sections: THESIS_SECTION_TYPES.map((type, index) => createSection(type, index)),
+    abstractZh: normalizeText(input.abstractZh),
+    abstractEn: normalizeText(input.abstractEn),
+    keywords: input.keywords ?? [],
   };
 
   database.theses.unshift(thesis);
@@ -290,12 +297,16 @@ function updateThesisMeta(thesisId, patch) {
   const thesis = findThesis(database, thesisId);
 
   thesis.title = normalizeText(patch.title) || thesis.title;
-  thesis.degree = DEGREE_TYPES.includes(patch.degree) ? patch.degree : thesis.degree;
-  thesis.university = normalizeText(patch.university) || thesis.university;
+  thesis.titleEn = normalizeText(patch.titleEn) ?? thesis.titleEn;
+  thesis.author = normalizeText(patch.author) || thesis.author;
+  thesis.supervisor = normalizeText(patch.supervisor) || thesis.supervisor;
+  thesis.institution = normalizeText(patch.institution) || thesis.institution;
   thesis.department = normalizeText(patch.department) || thesis.department;
-  thesis.studentName = normalizeText(patch.studentName) || thesis.studentName;
-  thesis.supervisorName = normalizeText(patch.supervisorName) || thesis.supervisorName;
+  thesis.degree = DEGREE_TYPES.includes(patch.degree) ? patch.degree : thesis.degree;
   thesis.status = THESIS_STATUSES.includes(patch.status) ? patch.status : thesis.status;
+  thesis.abstractZh = normalizeText(patch.abstractZh) ?? thesis.abstractZh;
+  thesis.abstractEn = normalizeText(patch.abstractEn) ?? thesis.abstractEn;
+  thesis.keywords = patch.keywords ?? thesis.keywords;
   touchThesis(thesis);
 
   writeDatabase(database);
@@ -365,7 +376,7 @@ function updateWritingStreak(wordCount) {
   const today = new Date().toISOString().slice(0, 10);
 
   if (streak.lastWriteDate === today) {
-    streak.todayWordCount += wordCount;
+    streak.todayWords += wordCount;
   } else {
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
 
@@ -375,14 +386,27 @@ function updateWritingStreak(wordCount) {
       streak.currentStreak = 1;
     }
 
-    streak.todayWordCount = wordCount;
+    streak.todayWords = wordCount;
     streak.lastWriteDate = today;
+    streak.totalWritingDays += 1;
   }
-
-  streak.totalWordCount += wordCount;
 
   if (streak.currentStreak > streak.longestStreak) {
     streak.longestStreak = streak.currentStreak;
+  }
+
+  const goalMet = streak.todayWords >= streak.dailyGoal;
+  const existingIndex = streak.streakHistory.findIndex((entry) => entry.date === today);
+
+  if (existingIndex >= 0) {
+    streak.streakHistory[existingIndex].words = streak.todayWords;
+    streak.streakHistory[existingIndex].goalMet = goalMet;
+  } else {
+    streak.streakHistory.unshift({
+      date: today,
+      words: streak.todayWords,
+      goalMet,
+    });
   }
 
   database.writingStreak = streak;
