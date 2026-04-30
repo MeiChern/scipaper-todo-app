@@ -1,0 +1,167 @@
+<h1 align="center">SciPaper Todo</h1>
+
+<p align="center">
+  <strong>本地优先的科研论文写作 IDE · Local-first scientific manuscript IDE</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/1690834643/scipaper-todo/releases/latest"><img src="https://img.shields.io/github/v/release/1690834643/scipaper-todo?style=flat-square&color=2ea44f" alt="release"></a>
+  <a href="https://github.com/1690834643/scipaper-todo/releases/latest"><img src="https://img.shields.io/badge/platform-Windows%20x64-0078D6?style=flat-square" alt="platform"></a>
+  <img src="https://img.shields.io/badge/electron-37-47848F?style=flat-square" alt="electron">
+  <img src="https://img.shields.io/badge/react-19-61DAFB?style=flat-square" alt="react">
+  <img src="https://img.shields.io/badge/MCP-stdio-F46036?style=flat-square" alt="mcp">
+</p>
+
+<p align="center">
+  <a href="#中文"><strong>中文说明</strong></a> ·
+  <a href="#english"><strong>English</strong></a> ·
+  <a href="https://github.com/1690834643/scipaper-todo/releases/latest"><strong>下载 / Download</strong></a>
+</p>
+
+---
+
+## 中文
+
+### 这是什么
+
+**SciPaper Todo** 是一款面向生命科学研究者的 Windows 桌面应用，把"写论文"当成一个软件工程项目来管理：
+
+- 一篇论文 = 一个仓库，按 IMRaD 结构组织（Title / Abstract / Introduction / Methods / Results / Discussion / References）
+- 数据本地，不上云；附件、版本、修改记录全部留在你机器上
+- 内置 MCP 服务器，让 Cursor / Claude Code / Claude Desktop 直接读写你的论文
+- 可选接入大模型（DeepSeek 等），AI 助手懂当前章节、当前学科、当前审稿轮次
+- 支持 Word 导出，可一键 LLM 自动按学术规范打斜体（`*Chilo suppressalis*` / `*p* < 0.05`）
+- Zotero 直连，文献检索 / 全文 / 批注 都能在 AI 对话里自然调用
+
+### 核心特色
+
+| 特色 | 说明 |
+|---|---|
+| 🧠 **MCP 双向协议** | 内置 stdio MCP server 暴露 27 个工具（22 本地 + 5 Zotero），任何兼容 MCP 的 AI 客户端都能查/写你的论文 |
+| 📚 **IMRaD 一等公民** | 创建论文先回答 4 个研究问题（科学问题 / 现象 / 假设 / 方案），自动生成七章节骨架；ContentBlock 支持文本 / 图片 / 文件链接，每次修改自动版本快照 |
+| 🤖 **内置 AI 助手 + 8 场景** | 右侧 Cmd+K Drawer，预置 Abstract / Introduction / Methods / Results / Discussion / Conclusion / Reply Reviewer / Distill 八个场景 prompt，可自定义；支持 OpenAI 与 Anthropic 双协议、思考模式（reasoning_content）流式渲染、工具调用 + 二次确认 |
+| 📝 **docx 三模板 + 拉丁斜体规范** | Times New Roman 通用学术 / 宋体 1.5 行距中文学位 / Arial 紧凑 Nature 风格三套模板；勾选"套斜体规范"即可让 LLM 在导出前按学术英语惯例自动给学名 / 拉丁短语 / 统计变量打斜体 |
+| 📖 **Zotero 集成** | 通过 zotero-mcp-plugin 直连本地 Zotero（不限版本，6 / 7 / 8 都支持），library 检索 / collection 浏览 / item 详情 / 全文 / 批注 五种查询能力 |
+| 🔍 **审稿工作流** | 多轮 ReviewRound + Major/Minor 意见分类 + Revision 关联到具体 ContentBlock + 一键生成回复信草稿 |
+| 🎨 **多主题 + 海报分享** | claude / pixel / fresh 三主题 token 化切换；1080×1440 写作打卡海报（含 Latin 引文、印章、波浪线、渐变进度条） |
+| 💾 **本地数据安全** | JSON 数据库 + 原子写入（.tmp + rename）+ 5 分钟周期 .bak 备份 + safeStorage 加密的 API Key |
+| 🔥 **写作激励** | streak 连续打卡 / 番茄钟会话计数 / 打字字数 / 心情记录 / 每日字数目标 |
+
+### 安装与使用
+
+1. 到 [Releases](https://github.com/1690834643/scipaper-todo/releases/latest) 下载：
+   - **Setup**：标准 NSIS 安装包，会写入 Start Menu / 卸载条目
+   - **Portable**：单文件免安装版，双击即用
+2. 首次启动会在 `%USERPROFILE%\Documents\SciPaperTodo\` 创建数据目录
+3. 进 **Settings → AI Provider** 添加你的 LLM（DeepSeek V4 Flash / Pro 已内置预设，粘贴 API Key 即可）
+4. 进 **Settings → Zotero 接入**（可选）启用 Zotero 集成
+5. 进 **Settings → MCP 协议** 复制配置粘到 Cursor / Claude Code 即可在外部 AI 里读写论文
+
+### 技术栈
+
+- **桌面壳**：Electron 37（Chromium 130+，原生 Canvas 2D L2 / safeStorage / contextBridge 全用上）
+- **渲染层**：React 19 + TypeScript 6 + Vite 8（65 modules，gzipped JS 127 KB）
+- **存储**：本地 JSON 数据库 + safeStorage 加密 API Key
+- **AI 协议**：OpenAI-compat 与 Anthropic 双协议流式，支持 thinking mode 的 `reasoning_content` 重放
+- **MCP**：基于 `@modelcontextprotocol/sdk` 的 stdio server
+- **导出**：`docx` v9 纯 JS 包，无 native 依赖
+- **打包**：electron-builder 出 NSIS + Portable 双产物，每次约 90 秒
+
+### 路径速查
+
+```
+%USERPROFILE%\Documents\SciPaperTodo\
+├── database.json           # 主数据库（原子写入）
+├── database.json.bak       # 5 分钟周期备份
+├── Articles\
+│   └── {ArticleId}\
+│       ├── Attachments\    # 复制进来的图片 / 数据文件
+│       └── Exports\        # 导出的 docx / md
+└── Theses\                 # 学位论文（聚合多篇 article）
+```
+
+### 谁适合用
+
+- 生命科学博士生 / 博后 / 青年 PI（默认场景）
+- 任何 IMRaD 写作者，特别是要管理 **多篇并行 + 多轮审稿** 的人
+- 想把 AI 真正接到自己写作流程里、又不愿把数据交给云的人
+
+### 反馈与已知
+
+- 暂不支持 macOS / Linux 二进制（代码跨平台，需自编译）
+- 旧 `deepseek-chat` / `deepseek-reasoner` model id 已在 V4 文档里被标记为 legacy；预设直接给 `deepseek-v4-flash` / `deepseek-v4-pro`
+- WSL 下 safeStorage 拒保存 API Key（Windows 实机用 DPAPI 正常）；如遇此情况只在 Windows 跑
+
+---
+
+## English
+
+### What is this
+
+**SciPaper Todo** is a Windows desktop app for life-science researchers that treats manuscript writing like a software project:
+
+- One paper = one repository, organised by IMRaD (Title / Abstract / Introduction / Methods / Results / Discussion / References)
+- Local-first. Attachments, versions, edit history all stay on your machine
+- Built-in MCP server lets Cursor / Claude Code / Claude Desktop read and write your manuscripts directly
+- Optional LLM integration (DeepSeek and others). The assistant knows your current section, field, and review round
+- Word export with one-click LLM auto-italicisation per academic conventions (`*Chilo suppressalis*` / `*p* < 0.05`)
+- Direct Zotero integration: search, fulltext, annotations all callable from chat
+
+### Key features
+
+| Feature | What it does |
+|---|---|
+| 🧠 **Bidirectional MCP** | Built-in stdio MCP server exposes 27 tools (22 local + 5 Zotero). Any MCP-compatible AI client can query and write to your manuscripts |
+| 📚 **IMRaD as a first-class citizen** | Creating a paper starts with 4 research questions (problem / phenomenon / hypothesis / approach) that auto-generate the 7-section skeleton. Content blocks support text / image / file link, with automatic version snapshots on every edit |
+| 🤖 **Built-in AI drawer + 8 scenarios** | Right-side Cmd+K drawer with preset prompts for Abstract / Introduction / Methods / Results / Discussion / Conclusion / Reply Reviewer / Distill, all customisable. OpenAI and Anthropic protocols, streaming `reasoning_content` for thinking-mode models, tool-calling with confirm-before-write |
+| 📝 **3 docx templates + Latin italic guide** | Times New Roman academic / SimSun 1.5-spacing thesis / Arial Nature-style. Tick "apply italic guide" and the exporter calls the LLM to mark italics on species names, Latin phrases, and statistical variables before writing the docx |
+| 📖 **Zotero integration** | Via zotero-mcp-plugin (works with Zotero 6/7/8): library search, collection browsing, item details, fulltext, annotations |
+| 🔍 **Review workflow** | Multiple ReviewRounds, Major/Minor tagging, Revisions linked to specific ContentBlocks, one-click response-letter draft |
+| 🎨 **Themes + share posters** | Three token-based themes (claude / pixel / fresh). Generates 1080×1440 daily-writing posters with Latin epigraph, seal, waveform, gradient progress |
+| 💾 **Safe local storage** | JSON database with atomic writes (.tmp + rename), rolling 5-minute .bak snapshot, API keys encrypted via safeStorage |
+| 🔥 **Writing motivation** | Streak counter, pomodoro session log, daily word target, mood log, typing-burst stats |
+
+### Install
+
+1. Grab from [Releases](https://github.com/1690834643/scipaper-todo/releases/latest):
+   - **Setup**: standard NSIS installer with Start Menu and uninstall entry
+   - **Portable**: single-file binary, no install
+2. First launch creates `%USERPROFILE%\Documents\SciPaperTodo\`
+3. **Settings → AI Provider**: add your LLM (DeepSeek V4 Flash / Pro presets included, paste your API key)
+4. **Settings → Zotero** (optional): enable Zotero integration
+5. **Settings → MCP**: copy the config block into Cursor / Claude Code to give external AIs access
+
+### Stack
+
+- **Shell**: Electron 37 (Chromium 130+, uses Canvas 2D Level 2, safeStorage, contextBridge)
+- **Renderer**: React 19 + TypeScript 6 + Vite 8 (65 modules, ~127 KB gzipped JS)
+- **Storage**: local JSON database + encrypted API key store
+- **AI**: dual-protocol streaming (OpenAI-compat + Anthropic), with `reasoning_content` replay for thinking-mode models
+- **MCP**: stdio server on top of `@modelcontextprotocol/sdk`
+- **Export**: `docx` v9 (pure JS, no native deps)
+- **Packaging**: electron-builder, NSIS + Portable twin output, ~90 s per build
+
+### Paths
+
+```
+%USERPROFILE%\Documents\SciPaperTodo\
+├── database.json           # Main database (atomic writes)
+├── database.json.bak       # Rolling 5-minute backup
+├── Articles\
+│   └── {ArticleId}\
+│       ├── Attachments\    # Copied figures / raw data files
+│       └── Exports\        # Generated docx / md
+└── Theses\                 # Degree theses (aggregate of multiple articles)
+```
+
+### Who is this for
+
+- Life-science PhD students, postdocs, early-career PIs (default audience)
+- Any IMRaD writer juggling multiple manuscripts and review rounds
+- Anyone who wants AI in their writing flow but does not want their data on a vendor's cloud
+
+### Caveats
+
+- Windows x64 binaries only; the codebase is cross-platform, build from source for macOS / Linux
+- Legacy `deepseek-chat` / `deepseek-reasoner` model IDs are deprecated per DeepSeek docs; presets ship with `deepseek-v4-flash` / `deepseek-v4-pro`
+- safeStorage refuses to persist API keys under WSL; run the actual binary on Windows for full functionality
