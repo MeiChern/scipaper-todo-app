@@ -5,8 +5,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/1690834643/scipaper-todo/releases/latest"><img src="https://img.shields.io/github/v/release/1690834643/scipaper-todo?style=flat-square&color=2ea44f" alt="release"></a>
-  <a href="https://github.com/1690834643/scipaper-todo/releases/latest"><img src="https://img.shields.io/badge/platform-Windows%20x64-0078D6?style=flat-square" alt="platform"></a>
+  <a href="https://github.com/1690834643/scipaper-todo-app/releases/latest"><img src="https://img.shields.io/github/v/release/1690834643/scipaper-todo-app?style=flat-square&color=2ea44f" alt="release"></a>
+  <a href="https://github.com/1690834643/scipaper-todo-app/releases/latest"><img src="https://img.shields.io/badge/platform-Windows%20x64-0078D6?style=flat-square" alt="platform"></a>
   <img src="https://img.shields.io/badge/electron-37-47848F?style=flat-square" alt="electron">
   <img src="https://img.shields.io/badge/react-19-61DAFB?style=flat-square" alt="react">
   <img src="https://img.shields.io/badge/MCP-stdio-F46036?style=flat-square" alt="mcp">
@@ -15,7 +15,7 @@
 <p align="center">
   <a href="#中文"><strong>中文说明</strong></a> ·
   <a href="#english"><strong>English</strong></a> ·
-  <a href="https://github.com/1690834643/scipaper-todo/releases/latest"><strong>下载 / Download</strong></a>
+  <a href="https://github.com/1690834643/scipaper-todo-app/releases/latest"><strong>下载 / Download</strong></a>
 </p>
 
 ---
@@ -49,7 +49,7 @@
 
 ### 安装与使用
 
-1. 到 [Releases](https://github.com/1690834643/scipaper-todo/releases/latest) 下载：
+1. 到 [Releases](https://github.com/1690834643/scipaper-todo-app/releases/latest) 下载：
    - **Setup**：标准 NSIS 安装包，会写入 Start Menu / 卸载条目
    - **Portable**：单文件免安装版，双击即用
 2. 首次启动会在 `%USERPROFILE%\Documents\SciPaperTodo\` 创建数据目录
@@ -123,7 +123,7 @@
 
 ### Install
 
-1. Grab from [Releases](https://github.com/1690834643/scipaper-todo/releases/latest):
+1. Grab from [Releases](https://github.com/1690834643/scipaper-todo-app/releases/latest):
    - **Setup**: standard NSIS installer with Start Menu and uninstall entry
    - **Portable**: single-file binary, no install
 2. First launch creates `%USERPROFILE%\Documents\SciPaperTodo\`
