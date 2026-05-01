@@ -56,14 +56,6 @@ export function countWords(text: string): number {
   return chineseCount + englishWords.length
 }
 
-export function countChineseChars(text: string): number {
-  if (!text) return 0
-  
-  // Match Chinese characters
-  const chineseChars = text.match(/[\u4e00-\u9fa5]/g)
-  return chineseChars ? chineseChars.length : 0
-}
-
 export function countTotalChars(text: string): number {
   if (!text) return 0
   return text.replace(/\s/g, '').length

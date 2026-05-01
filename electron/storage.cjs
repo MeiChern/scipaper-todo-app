@@ -2,6 +2,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { pathToFileURL } = require('url');
+const { PRESETS } = require('./llmPresets.cjs');
 
 const SECTION_TYPES = [
   'Title',
@@ -47,6 +48,20 @@ const THESIS_SECTION_TYPES = [
   'Appendix',
 ];
 
+const THESIS_SECTION_TITLES = {
+  Cover: '封面',
+  Declaration: '原创性声明',
+  Abstract: '摘要',
+  Acknowledgements: '致谢',
+  TableOfContents: '目录',
+  ListOfFigures: '图目录',
+  ListOfTables: '表目录',
+  Chapter: '章节',
+  Conclusion: '结论',
+  References: '参考文献',
+  Appendix: '附录',
+};
+
 const DEGREE_TYPES = ['Master', 'PhD'];
 
 const BASE_DIRECTORY = path.join(os.homedir(), 'Documents', 'SciPaperTodo');
@@ -55,6 +70,14 @@ const DATABASE_PATH = path.join(BASE_DIRECTORY, 'database.json');
 const IMAGE_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg', '.tif', '.tiff']);
 const PDF_EXTENSIONS = new Set(['.pdf']);
 const THESES_DIRECTORY = path.join(BASE_DIRECTORY, 'Theses');
+const DEFAULT_ITALIC_PROMPT =
+  '在生成或修改科研写作正文时,自动按学术英语惯例对以下内容标注斜体(用 markdown *text*):' +
+  '\n- 物种学名(属种二项式,如 *Chilo suppressalis*),属名首字母大写,种名小写' +
+  '\n- 拉丁短语(in vitro / in vivo / ex vivo / de novo / et al. / vs. / e.g. / i.e. / per se / via)' +
+  '\n- 统计变量符号(p, t, F, r, n, N, df, χ²),例如 *p* < 0.05' +
+  '\n- 基因符号(按物种约定:果蝇基因斜体小写如 *hsp70*;蛋白正体大写如 HSP70)' +
+  '\n- 数学常量符号(*e* 自然常数,*i* 虚数,*x* 自变量等)' +
+  '\n规则不必穷举,你应当依据学术英语规范主动识别并标注。中文写作中,这些专有术语在中文里也保持斜体英文形式(中文不变)。';
 
 function now() {
   return new Date().toISOString();
@@ -93,13 +116,31 @@ function ensureStore() {
 
 function readDatabase() {
   ensureStore();
+  // Recover from a crashed write: if main file gone but .bak exists, promote .bak
+  if (!fs.existsSync(DATABASE_PATH) && fs.existsSync(DATABASE_PATH + '.bak')) {
+    fs.copyFileSync(DATABASE_PATH + '.bak', DATABASE_PATH);
+  }
   const raw = fs.readFileSync(DATABASE_PATH, 'utf-8');
   return normalizeStoredDatabase(JSON.parse(raw));
 }
 
+let lastBackupAt = 0;
+const BACKUP_INTERVAL_MS = 5 * 60 * 1000;
+
 function writeDatabase(data) {
   ensureStore();
-  fs.writeFileSync(DATABASE_PATH, JSON.stringify(normalizeStoredDatabase(data), null, 2), 'utf-8');
+  const json = JSON.stringify(normalizeStoredDatabase(data), null, 2);
+  const tmpPath = DATABASE_PATH + '.tmp';
+  fs.writeFileSync(tmpPath, json, 'utf-8');
+  // Snapshot last good copy at most every BACKUP_INTERVAL_MS
+  if (fs.existsSync(DATABASE_PATH) && Date.now() - lastBackupAt > BACKUP_INTERVAL_MS) {
+    try {
+      fs.copyFileSync(DATABASE_PATH, DATABASE_PATH + '.bak');
+      lastBackupAt = Date.now();
+    } catch {}
+  }
+  // Atomic on POSIX; Node fs.renameSync replaces target on Windows too
+  fs.renameSync(tmpPath, DATABASE_PATH);
 }
 
 function createArticleFolder(articleId) {
@@ -146,6 +187,173 @@ function normalizeStoredBlock(block) {
   };
 }
 
+function normalizeStreakHistoryEntry(entry = {}) {
+  return {
+    ...entry,
+    date: typeof entry.date === 'string' ? entry.date : '',
+    words: Number.isFinite(entry.words) ? entry.words : 0,
+    addedWords: Number.isFinite(entry.addedWords) ? entry.addedWords : 0,
+    removedWords: Number.isFinite(entry.removedWords) ? entry.removedWords : 0,
+    changedWords: Number.isFinite(entry.changedWords) ? entry.changedWords : 0,
+    byAI: Number.isFinite(entry.byAI) ? entry.byAI : 0,
+    byManual: Number.isFinite(entry.byManual) ? entry.byManual : 0,
+    goalMet: typeof entry.goalMet === 'boolean' ? entry.goalMet : false,
+  };
+}
+
+function normalizeWritingStreak(streak = {}) {
+  return {
+    currentStreak: Number.isFinite(streak.currentStreak) ? streak.currentStreak : 0,
+    longestStreak: Number.isFinite(streak.longestStreak) ? streak.longestStreak : 0,
+    lastWriteDate: typeof streak.lastWriteDate === 'string' ? streak.lastWriteDate : null,
+    totalWritingDays: Number.isFinite(streak.totalWritingDays) ? streak.totalWritingDays : 0,
+    todayWords: Number.isFinite(streak.todayWords) ? streak.todayWords : 0,
+    todayAddedWords: Number.isFinite(streak.todayAddedWords) ? streak.todayAddedWords : 0,
+    todayRemovedWords: Number.isFinite(streak.todayRemovedWords) ? streak.todayRemovedWords : 0,
+    todayChangedWords: Number.isFinite(streak.todayChangedWords) ? streak.todayChangedWords : 0,
+    todayByAI: Number.isFinite(streak.todayByAI) ? streak.todayByAI : 0,
+    todayByManual: Number.isFinite(streak.todayByManual) ? streak.todayByManual : 0,
+    dailyGoal: Number.isFinite(streak.dailyGoal) && streak.dailyGoal > 0 ? streak.dailyGoal : 500,
+    streakHistory: Array.isArray(streak.streakHistory)
+      ? streak.streakHistory.map(normalizeStreakHistoryEntry)
+      : [],
+    moodHistory: Array.isArray(streak.moodHistory) ? streak.moodHistory : [],
+  };
+}
+
+function ensureDefaultProviders(arr) {
+  if (arr.length === 0) {
+    return PRESETS.map((preset) => {
+      const timestamp = new Date().toISOString();
+
+      return {
+        id: preset.presetId,
+        name: preset.name,
+        kind: preset.kind,
+        baseUrl: preset.baseUrl,
+        model: preset.model ?? preset.defaultModel,
+        temperature: preset.temperature ?? 0.3,
+        supportsToolUse: preset.supportsToolUse ?? false,
+        trustForWrite: preset.trustForWrite ?? false,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        presetId: preset.presetId,
+      };
+    });
+  }
+
+  return arr;
+}
+
+function normalizeLlmProviders(arr) {
+  if (!Array.isArray(arr)) {
+    return ensureDefaultProviders([]);
+  }
+
+  const providers = arr
+    .map((provider) => {
+      if (typeof provider?.id !== 'string') {
+        return null;
+      }
+
+      return {
+        id: provider.id,
+        name: provider.name,
+        kind: provider.kind,
+        baseUrl: provider.baseUrl,
+        model: provider.model,
+        temperature: provider.temperature,
+        supportsToolUse: provider.supportsToolUse,
+        trustForWrite: provider.trustForWrite,
+        createdAt: provider.createdAt,
+        updatedAt: provider.updatedAt,
+        presetId: provider.presetId,
+      };
+    })
+    .filter(Boolean);
+
+  return ensureDefaultProviders(providers);
+}
+
+function ensureDefaultScenarios(arr) {
+  if (arr.length === 0) {
+    try {
+      const { BUILTIN_SCENARIOS } = require('./writingScenarios.cjs');
+      return Array.isArray(BUILTIN_SCENARIOS) ? BUILTIN_SCENARIOS.map((scenario) => ({ ...scenario })) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  return arr;
+}
+
+function normalizeWritingScenarios(arr) {
+  if (!Array.isArray(arr) || arr.length === 0) {
+    return ensureDefaultScenarios([]);
+  }
+
+  return ensureDefaultScenarios(arr);
+}
+
+function normalizeItalicGuide(obj = {}) {
+  return {
+    prompt: typeof obj.prompt === 'string' ? obj.prompt : DEFAULT_ITALIC_PROMPT,
+    enabled: typeof obj.enabled === 'boolean' ? obj.enabled : true,
+  };
+}
+
+function normalizeZoteroConfig(obj = {}) {
+  return {
+    endpoint: typeof obj.endpoint === 'string' ? obj.endpoint : 'http://localhost:23119',
+    userId: typeof obj.userId === 'string' ? obj.userId : '0',
+    enabled: typeof obj.enabled === 'boolean' ? obj.enabled : false,
+  };
+}
+
+function normalizeFinding(finding = {}) {
+  const validStatus = ['planned', 'inProgress', 'done'];
+  return {
+    id: typeof finding.id === 'string' ? finding.id : createId(),
+    sectionId: typeof finding.sectionId === 'string' ? finding.sectionId : '',
+    title: normalizeText(finding.title),
+    description: normalizeText(finding.description),
+    status: validStatus.includes(finding.status) ? finding.status : 'planned',
+    orderIndex: Number.isFinite(finding.orderIndex) ? finding.orderIndex : 0,
+    createdAt: typeof finding.createdAt === 'string' ? finding.createdAt : now(),
+    updatedAt: typeof finding.updatedAt === 'string' ? finding.updatedAt : now(),
+  };
+}
+
+function normalizeProgressEntry(entry = {}) {
+  const validKinds = ['read', 'experiment', 'writing', 'idea', 'cite', 'analysis', 'focus', 'mood'];
+  return {
+    id: typeof entry.id === 'string' ? entry.id : createId(),
+    date: typeof entry.date === 'string' ? entry.date : new Date().toISOString().slice(0, 10),
+    articleId: typeof entry.articleId === 'string' ? entry.articleId : '',
+    kind: validKinds.includes(entry.kind) ? entry.kind : 'idea',
+    title: normalizeText(entry.title),
+    detail: normalizeText(entry.detail),
+    sectionId: typeof entry.sectionId === 'string' ? entry.sectionId : undefined,
+    findingId: typeof entry.findingId === 'string' ? entry.findingId : undefined,
+    citationId: typeof entry.citationId === 'string' ? entry.citationId : undefined,
+    minutesSpent: Number.isFinite(entry.minutesSpent) ? entry.minutesSpent : undefined,
+    createdAt: typeof entry.createdAt === 'string' ? entry.createdAt : now(),
+    createdBy: entry.createdBy === 'ai' ? 'ai' : 'user',
+  };
+}
+
+function normalizeDailySession(session = {}) {
+  return {
+    date: typeof session.date === 'string' ? session.date : new Date().toISOString().slice(0, 10),
+    planText: normalizeText(session.planText),
+    summaryText: normalizeText(session.summaryText),
+    startedAt: typeof session.startedAt === 'string' ? session.startedAt : now(),
+    endedAt: typeof session.endedAt === 'string' ? session.endedAt : undefined,
+    progressEntryIds: Array.isArray(session.progressEntryIds) ? session.progressEntryIds.filter((id) => typeof id === 'string') : [],
+  };
+}
+
 function normalizeStoredDatabase(data) {
   return {
     version: data.version ?? 1,
@@ -154,6 +362,7 @@ function normalizeStoredDatabase(data) {
       sections: (article.sections ?? []).map((section) => ({
         ...section,
         contentBlocks: (section.contentBlocks ?? []).map(normalizeStoredBlock),
+        findings: Array.isArray(section.findings) ? section.findings.map(normalizeFinding) : [],
       })),
       reviewRounds: article.reviewRounds ?? [],
       citations: article.citations ?? [],
@@ -165,17 +374,16 @@ function normalizeStoredDatabase(data) {
         contentBlocks: (section.contentBlocks ?? []).map(normalizeStoredBlock),
       })),
     })),
-    writingStreak: data.writingStreak ?? {
-      currentStreak: 0,
-      longestStreak: 0,
-      lastWriteDate: null,
-      totalWritingDays: 0,
-      todayWords: 0,
-      dailyGoal: 500,
-      streakHistory: [],
-      moodHistory: data.writingStreak?.moodHistory ?? [],
-    },
+    writingStreak: normalizeWritingStreak(data.writingStreak),
     pomodoroSessions: data.pomodoroSessions ?? [],
+    theme: data.theme ?? 'light',
+    llmProviders: normalizeLlmProviders(data.llmProviders),
+    activeLlmProviderId: typeof data.activeLlmProviderId === 'string' ? data.activeLlmProviderId : null,
+    writingScenarios: normalizeWritingScenarios(data.writingScenarios),
+    italicGuide: normalizeItalicGuide(data.italicGuide),
+    zoteroConfig: normalizeZoteroConfig(data.zoteroConfig),
+    progressEntries: Array.isArray(data.progressEntries) ? data.progressEntries.map(normalizeProgressEntry) : [],
+    dailySessions: Array.isArray(data.dailySessions) ? data.dailySessions.map(normalizeDailySession) : [],
   };
 }
 
@@ -201,6 +409,17 @@ function createSection(type, orderIndex) {
   return {
     id: createId(),
     type,
+    orderIndex,
+    contentBlocks: [],
+  };
+}
+
+function createThesisSection(thesisId, type, orderIndex, title) {
+  return {
+    id: createId(),
+    thesisId,
+    type,
+    title: normalizeText(title) || THESIS_SECTION_TITLES[type] || type,
     orderIndex,
     contentBlocks: [],
   };
@@ -269,7 +488,7 @@ function createThesis(input) {
     createdAt: timestamp,
     updatedAt: timestamp,
     articleIds: input.articleIds ?? [],
-    sections: THESIS_SECTION_TYPES.map((type, index) => createSection(type, index)),
+    sections: THESIS_SECTION_TYPES.map((type, index) => createThesisSection(thesisId, type, index)),
     abstractZh: normalizeText(input.abstractZh),
     abstractEn: normalizeText(input.abstractEn),
     keywords: input.keywords ?? [],
@@ -324,8 +543,7 @@ function addThesisSection(thesisId, sectionType, title) {
     throw new Error(`Invalid thesis section type: ${sectionType}`);
   }
 
-  const section = createSection(sectionType, thesis.sections.length);
-  section.title = normalizeText(title) || sectionType;
+  const section = createThesisSection(thesisId, sectionType, thesis.sections.length, title);
   thesis.sections.push(section);
   touchThesis(thesis);
 
@@ -364,13 +582,48 @@ function updateDailyGoal(goal) {
   }
 }
 
-function updateWritingStreak(wordCount) {
-  const database = readDatabase();
-  const streak = database.writingStreak;
+function normalizeWritingDelta(input) {
+  if (Number.isFinite(input)) {
+    return {
+      added: Math.max(0, input),
+      removed: 0,
+      source: 'manual',
+    };
+  }
+
+  const added = Number.isFinite(input?.added) ? input.added : 0;
+  const removed = Number.isFinite(input?.removed) ? input.removed : 0;
+  const source = String(input?.source || 'manual').toLowerCase() === 'ai' ? 'ai' : 'manual';
+
+  return {
+    added: Math.max(0, added),
+    removed: Math.max(0, removed),
+    source,
+  };
+}
+
+function applyWritingStreak(streakInput, deltaInput) {
+  const streak = normalizeWritingStreak(streakInput);
+  const delta = normalizeWritingDelta(deltaInput);
+  const changedWords = delta.added + delta.removed;
+
+  if (changedWords <= 0) {
+    return streak;
+  }
+
+  const netWords = delta.added - delta.removed;
   const today = new Date().toISOString().slice(0, 10);
 
   if (streak.lastWriteDate === today) {
-    streak.todayWords += wordCount;
+    streak.todayWords += netWords;
+    streak.todayAddedWords += delta.added;
+    streak.todayRemovedWords += delta.removed;
+    streak.todayChangedWords += changedWords;
+    if (delta.source === 'ai') {
+      streak.todayByAI += changedWords;
+    } else {
+      streak.todayByManual += changedWords;
+    }
   } else {
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
 
@@ -380,7 +633,12 @@ function updateWritingStreak(wordCount) {
       streak.currentStreak = 1;
     }
 
-    streak.todayWords = wordCount;
+    streak.todayWords = netWords;
+    streak.todayAddedWords = delta.added;
+    streak.todayRemovedWords = delta.removed;
+    streak.todayChangedWords = changedWords;
+    streak.todayByAI = delta.source === 'ai' ? changedWords : 0;
+    streak.todayByManual = delta.source === 'ai' ? 0 : changedWords;
     streak.lastWriteDate = today;
     streak.totalWritingDays += 1;
   }
@@ -394,19 +652,34 @@ function updateWritingStreak(wordCount) {
 
   if (existingIndex >= 0) {
     streak.streakHistory[existingIndex].words = streak.todayWords;
+    streak.streakHistory[existingIndex].addedWords = streak.todayAddedWords;
+    streak.streakHistory[existingIndex].removedWords = streak.todayRemovedWords;
+    streak.streakHistory[existingIndex].changedWords = streak.todayChangedWords;
+    streak.streakHistory[existingIndex].byAI = streak.todayByAI;
+    streak.streakHistory[existingIndex].byManual = streak.todayByManual;
     streak.streakHistory[existingIndex].goalMet = goalMet;
   } else {
     streak.streakHistory.unshift({
       date: today,
       words: streak.todayWords,
+      addedWords: streak.todayAddedWords,
+      removedWords: streak.todayRemovedWords,
+      changedWords: streak.todayChangedWords,
+      byAI: streak.todayByAI,
+      byManual: streak.todayByManual,
       goalMet,
     });
   }
 
-  database.writingStreak = streak;
+  return streak;
+}
+
+function updateWritingStreak(wordCount) {
+  const database = readDatabase();
+  database.writingStreak = applyWritingStreak(database.writingStreak, wordCount);
   writeDatabase(database);
 
-  return streak;
+  return database.writingStreak;
 }
 
 function touchArticle(article) {
@@ -589,6 +862,259 @@ function setTheme(theme) {
   return database;
 }
 
+function listProviders() {
+  const db = readDatabase();
+  return { providers: db.llmProviders, activeId: db.activeLlmProviderId };
+}
+
+function addProvider(input = {}) {
+  const name = normalizeText(input.name);
+  const kind = input.kind;
+  const baseUrl = normalizeText(input.baseUrl);
+  const model = normalizeText(input.model);
+
+  if (!name) {
+    throw new Error('Provider name is required');
+  }
+
+  if (!['openai-compat', 'anthropic'].includes(kind)) {
+    throw new Error('Invalid provider kind');
+  }
+
+  if (!baseUrl) {
+    throw new Error('Provider baseUrl is required');
+  }
+
+  if (!model) {
+    throw new Error('Provider model is required');
+  }
+
+  if (typeof input.supportsToolUse !== 'boolean') {
+    throw new Error('Provider supportsToolUse is required');
+  }
+
+  const db = readDatabase();
+  const timestamp = new Date().toISOString();
+  const provider = {
+    id: createId(),
+    name,
+    kind,
+    baseUrl,
+    model,
+    temperature: Number.isFinite(input.temperature) ? input.temperature : 0.3,
+    supportsToolUse: input.supportsToolUse,
+    trustForWrite: typeof input.trustForWrite === 'boolean' ? input.trustForWrite : false,
+    createdAt: timestamp,
+    updatedAt: timestamp,
+  };
+
+  db.llmProviders.push(provider);
+  writeDatabase(db);
+  return provider;
+}
+
+function updateProvider(id, patch = {}) {
+  const db = readDatabase();
+  const provider = db.llmProviders.find((item) => item.id === id);
+
+  if (!provider) {
+    throw new Error('Provider not found');
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'name')) {
+    provider.name = normalizeText(patch.name);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'kind')) {
+    if (!['openai-compat', 'anthropic'].includes(patch.kind)) {
+      throw new Error('Invalid provider kind');
+    }
+
+    provider.kind = patch.kind;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'baseUrl')) {
+    provider.baseUrl = normalizeText(patch.baseUrl);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'model')) {
+    provider.model = normalizeText(patch.model);
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'temperature')) {
+    provider.temperature = patch.temperature;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'supportsToolUse')) {
+    provider.supportsToolUse = patch.supportsToolUse;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'trustForWrite')) {
+    provider.trustForWrite = patch.trustForWrite;
+  }
+
+  provider.updatedAt = new Date().toISOString();
+  writeDatabase(db);
+  return provider;
+}
+
+function deleteProvider(id) {
+  const db = readDatabase();
+  db.llmProviders = db.llmProviders.filter((provider) => provider.id !== id);
+
+  if (db.activeLlmProviderId === id) {
+    db.activeLlmProviderId = null;
+  }
+
+  writeDatabase(db);
+}
+
+function setActiveProvider(id) {
+  const db = readDatabase();
+
+  if (!db.llmProviders.some((provider) => provider.id === id)) {
+    throw new Error('Provider not found');
+  }
+
+  db.activeLlmProviderId = id;
+  writeDatabase(db);
+}
+
+function listWritingScenarios() {
+  const db = readDatabase();
+  return db.writingScenarios;
+}
+
+function addWritingScenario(input = {}) {
+  const db = readDatabase();
+  const scenario = {
+    id: createId(),
+    builtin: false,
+    enabled: true,
+    ...input,
+  };
+
+  db.writingScenarios.push(scenario);
+  writeDatabase(db);
+  return scenario;
+}
+
+function updateWritingScenario(id, patch = {}) {
+  const db = readDatabase();
+  const scenario = db.writingScenarios.find((item) => item.id === id);
+
+  if (!scenario) {
+    throw new Error('Writing scenario not found');
+  }
+
+  if (scenario.builtin) {
+    if (Object.prototype.hasOwnProperty.call(patch, 'systemPromptAddon')) {
+      scenario.systemPromptAddon = patch.systemPromptAddon;
+    }
+  } else {
+    Object.assign(scenario, patch);
+  }
+
+  writeDatabase(db);
+  return scenario;
+}
+
+function deleteWritingScenario(id) {
+  const db = readDatabase();
+  const scenario = db.writingScenarios.find((item) => item.id === id);
+
+  if (!scenario) {
+    throw new Error('Writing scenario not found');
+  }
+
+  if (scenario.builtin) {
+    throw new Error('Cannot delete builtin scenario');
+  }
+
+  db.writingScenarios = db.writingScenarios.filter((item) => item.id !== id);
+  writeDatabase(db);
+  return db.writingScenarios;
+}
+
+function resetWritingScenarioToDefault(id) {
+  const db = readDatabase();
+  const index = db.writingScenarios.findIndex((item) => item.id === id);
+
+  if (index < 0) {
+    throw new Error('Writing scenario not found');
+  }
+
+  if (!db.writingScenarios[index].builtin) {
+    throw new Error('Cannot reset non-builtin scenario');
+  }
+
+  let original = null;
+  try {
+    const { BUILTIN_SCENARIOS } = require('./writingScenarios.cjs');
+    original = Array.isArray(BUILTIN_SCENARIOS)
+      ? BUILTIN_SCENARIOS.find((scenario) => scenario.id === id)
+      : null;
+  } catch {
+    original = null;
+  }
+
+  if (!original) {
+    throw new Error('Builtin scenario default not found');
+  }
+
+  db.writingScenarios[index] = { ...original };
+  writeDatabase(db);
+  return db.writingScenarios[index];
+}
+
+function getItalicGuide() {
+  const db = readDatabase();
+  return db.italicGuide;
+}
+
+function setItalicGuide(config = {}) {
+  const db = readDatabase();
+  const next = { ...db.italicGuide };
+
+  if (Object.prototype.hasOwnProperty.call(config, 'prompt')) {
+    next.prompt = config.prompt;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(config, 'enabled')) {
+    next.enabled = config.enabled;
+  }
+
+  db.italicGuide = normalizeItalicGuide(next);
+  writeDatabase(db);
+  return db.italicGuide;
+}
+
+function getZoteroConfig() {
+  const db = readDatabase();
+  return db.zoteroConfig;
+}
+
+function setZoteroConfig(config = {}) {
+  const db = readDatabase();
+  const next = { ...db.zoteroConfig };
+
+  if (Object.prototype.hasOwnProperty.call(config, 'endpoint')) {
+    next.endpoint = config.endpoint;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(config, 'userId')) {
+    next.userId = config.userId;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(config, 'enabled')) {
+    next.enabled = config.enabled;
+  }
+
+  db.zoteroConfig = normalizeZoteroConfig(next);
+  writeDatabase(db);
+  return db.zoteroConfig;
+}
+
 function getWritingStats() {
   const database = readDatabase();
   const articles = database.articles || [];
@@ -603,7 +1129,8 @@ function getWritingStats() {
       section.contentBlocks.forEach(block => {
         if (block.type === 'Text') {
           const words = block.content.split(/\s+/).filter(w => w.length > 0);
-          totalWords += words.length;
+          const blockWords = countWords(block.content);
+          totalWords += blockWords;
           totalChars += block.content.length;
           
           words.forEach(word => {
@@ -612,7 +1139,7 @@ function getWritingStats() {
           });
           
           const sectionType = section.type;
-          sectionStats[sectionType] = (sectionStats[sectionType] || 0) + words.length;
+          sectionStats[sectionType] = (sectionStats[sectionType] || 0) + blockWords;
         }
       });
     });
@@ -696,7 +1223,9 @@ function loadState() {
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt)),
     writingStreak: database.writingStreak,
     pomodoroStats: getPomodoroStats(),
-    theme: database.theme || 'light'
+    theme: database.theme || 'light',
+    progressEntries: Array.isArray(database.progressEntries) ? database.progressEntries : [],
+    dailySessions: Array.isArray(database.dailySessions) ? database.dailySessions : [],
   };
 }
 
@@ -729,7 +1258,7 @@ function updateResearchContext(articleId, researchContext) {
   writeDatabase(database);
 }
 
-function addTextBlock(articleId, sectionType, content, description = '', modifiedBy = 'SciPaper Todo') {
+function addTextBlock(articleId, sectionType, content, description = '', modifiedBy = 'SciPaper Todo', source = 'manual') {
   const cleanContent = normalizeText(content);
 
   if (!cleanContent) {
@@ -756,10 +1285,23 @@ function addTextBlock(articleId, sectionType, content, description = '', modifie
   });
 
   touchArticle(article);
+  database.writingStreak = applyWritingStreak(database.writingStreak, {
+    added: countWords(cleanContent),
+    removed: 0,
+    source: source || 'manual',
+  });
   writeDatabase(database);
 }
 
-function updateSectionContent(articleId, sectionType, content, mode = 'append', description = '', modifiedBy = 'SciPaper Todo') {
+function updateSectionContent(
+  articleId,
+  sectionType,
+  content,
+  mode = 'append',
+  description = '',
+  modifiedBy = 'SciPaper Todo',
+  source = 'manual',
+) {
   const cleanContent = normalizeText(content);
 
   if (!cleanContent) {
@@ -772,6 +1314,10 @@ function updateSectionContent(articleId, sectionType, content, mode = 'append', 
   const timestamp = now();
 
   if (mode === 'replace') {
+    const oldJoined = section.contentBlocks
+      .filter((block) => normalizeBlockType(block.type) === 'Text')
+      .map((block) => block.content || '')
+      .join('\n\n');
     const nonTextBlocks = section.contentBlocks.filter((block) => normalizeBlockType(block.type) !== 'Text');
 
     section.contentBlocks = [
@@ -793,6 +1339,12 @@ function updateSectionContent(articleId, sectionType, content, mode = 'append', 
       ...block,
       orderIndex,
     }));
+    const diff = diffWords(oldJoined, cleanContent);
+    database.writingStreak = applyWritingStreak(database.writingStreak, {
+      added: diff.addedChars,
+      removed: diff.removedChars,
+      source: source || 'manual',
+    });
   } else {
     section.contentBlocks.push({
       id: createId(),
@@ -807,13 +1359,18 @@ function updateSectionContent(articleId, sectionType, content, mode = 'append', 
       updatedBy: modifiedBy,
       versions: [createTextVersion(cleanContent, modifiedBy, description || '追加章节内容')],
     });
+    database.writingStreak = applyWritingStreak(database.writingStreak, {
+      added: countWords(cleanContent),
+      removed: 0,
+      source: source || 'manual',
+    });
   }
 
   touchArticle(article);
   writeDatabase(database);
 }
 
-function updateTextBlock(articleId, blockId, content, description = '', modifiedBy = 'SciPaper Todo') {
+function updateTextBlock(articleId, blockId, content, description = '', modifiedBy = 'SciPaper Todo', source = 'manual') {
   const cleanContent = normalizeText(content);
 
   if (!cleanContent) {
@@ -823,20 +1380,81 @@ function updateTextBlock(articleId, blockId, content, description = '', modified
   const database = readDatabase();
   const article = findArticle(database, articleId);
   const { block } = findBlock(article, blockId);
-  const previous = block.content;
+  const oldContent = block.content;
 
   block.content = cleanContent;
   block.description = normalizeText(description);
   block.updatedAt = now();
   block.updatedBy = modifiedBy;
 
-  if (previous !== cleanContent) {
+  if (oldContent !== cleanContent) {
     block.versions = block.versions ?? [];
     block.versions.unshift(createTextVersion(cleanContent, modifiedBy, '更新文本块'));
   }
 
+  const diff = diffWords(oldContent, cleanContent);
+  database.writingStreak = applyWritingStreak(database.writingStreak, {
+    added: diff.addedChars,
+    removed: diff.removedChars,
+    source: source || 'manual',
+  });
   touchArticle(article);
   writeDatabase(database);
+}
+
+const TOKEN_REGEX =
+  /([\u4e00-\u9fa5])|([a-zA-Z]+(?:['-][a-zA-Z]+)*)|(\d+(?:\.\d+)?)|(\s+)|([^\s\u4e00-\u9fa5\w])/g;
+
+function tokenizeWords(text) {
+  const tokens = [];
+  let match;
+
+  while ((match = TOKEN_REGEX.exec(text)) !== null) {
+    if (match[4] === undefined) {
+      tokens.push(match[0]);
+    }
+  }
+
+  TOKEN_REGEX.lastIndex = 0;
+  return tokens;
+}
+
+function tokenWeight(token) {
+  if (
+    /^[\u4e00-\u9fa5]$/.test(token) ||
+    /^[a-zA-Z]+(?:['-][a-zA-Z]+)*$/.test(token) ||
+    /^\d+(?:\.\d+)?$/.test(token)
+  ) {
+    return 1;
+  }
+
+  return 0;
+}
+
+function lcsCount(a, b) {
+  const columns = a.length <= b.length ? a : b;
+  const rows = a.length <= b.length ? b : a;
+  let previous = new Array(columns.length + 1).fill(0);
+
+  for (const rowToken of rows) {
+    const current = new Array(columns.length + 1).fill(0);
+
+    for (let columnIndex = 1; columnIndex <= columns.length; columnIndex += 1) {
+      const columnToken = columns[columnIndex - 1];
+      const skipRow = previous[columnIndex];
+      const skipColumn = current[columnIndex - 1];
+
+      if (rowToken === columnToken) {
+        current[columnIndex] = Math.max(previous[columnIndex - 1] + tokenWeight(rowToken), skipRow, skipColumn);
+      } else {
+        current[columnIndex] = Math.max(skipRow, skipColumn);
+      }
+    }
+
+    previous = current;
+  }
+
+  return previous[columns.length];
 }
 
 function countWords(text) {
@@ -858,38 +1476,49 @@ function countWords(text) {
   return chineseChars + englishWords;
 }
 
+function diffWords(oldText, newText) {
+  const safeOldText = oldText ?? '';
+  const safeNewText = newText ?? '';
+  const oldCount = countWords(safeOldText);
+  const newCount = countWords(safeNewText);
+
+  if (safeOldText === safeNewText) {
+    return {
+      addedChars: 0,
+      removedChars: 0,
+      changedChars: 0,
+      netChars: 0,
+      oldCount,
+      newCount,
+    };
+  }
+
+  const oldTokens = tokenizeWords(safeOldText);
+  const newTokens = tokenizeWords(safeNewText);
+  let addedChars;
+  let removedChars;
+
+  if (oldTokens.length > 5000 || newTokens.length > 5000) {
+    addedChars = Math.max(0, newCount - oldCount);
+    removedChars = Math.max(0, oldCount - newCount);
+  } else {
+    const commonCount = lcsCount(oldTokens, newTokens);
+    addedChars = Math.max(0, newCount - commonCount);
+    removedChars = Math.max(0, oldCount - commonCount);
+  }
+
+  return {
+    addedChars,
+    removedChars,
+    changedChars: addedChars + removedChars,
+    netChars: newCount - oldCount,
+    oldCount,
+    newCount,
+  };
+}
+
 function updateTextBlockWithStreak(articleId, blockId, content, description = '', modifiedBy = 'SciPaper Todo') {
-  const cleanContent = normalizeText(content);
-
-  if (!cleanContent) {
-    throw new Error('Text content cannot be empty');
-  }
-
-  const database = readDatabase();
-  const article = findArticle(database, articleId);
-  const { block } = findBlock(article, blockId);
-  const previous = block.content;
-
-  block.content = cleanContent;
-  block.description = normalizeText(description);
-  block.updatedAt = now();
-  block.updatedBy = modifiedBy;
-
-  if (previous !== cleanContent) {
-    block.versions = block.versions ?? [];
-    block.versions.unshift(createTextVersion(cleanContent, modifiedBy, '更新文本块'));
-
-    const previousWordCount = countWords(previous);
-    const newWordCount = countWords(cleanContent);
-    const addedWords = Math.max(0, newWordCount - previousWordCount);
-
-    if (addedWords > 0) {
-      updateWritingStreak(addedWords);
-    }
-  }
-
-  touchArticle(article);
-  writeDatabase(database);
+  return updateTextBlock(articleId, blockId, content, description, modifiedBy, 'manual');
 }
 
 function addCitation(articleId, payload) {
@@ -919,7 +1548,7 @@ function addCitation(articleId, payload) {
   writeDatabase(database);
 }
 
-function deleteBlock(articleId, blockId) {
+function deleteBlock(articleId, blockId, source = 'manual') {
   const database = readDatabase();
   const article = findArticle(database, articleId);
 
@@ -927,11 +1556,20 @@ function deleteBlock(articleId, blockId) {
     const index = section.contentBlocks.findIndex((item) => item.id === blockId);
 
     if (index >= 0) {
+      const block = section.contentBlocks[index];
+      const oldContent = block.type === 'Text' ? (block.content || '') : '';
       section.contentBlocks.splice(index, 1);
       section.contentBlocks = section.contentBlocks.map((block, orderIndex) => ({
         ...block,
         orderIndex,
       }));
+      if (oldContent) {
+        database.writingStreak = applyWritingStreak(database.writingStreak, {
+          added: 0,
+          removed: countWords(oldContent),
+          source: source || 'manual',
+        });
+      }
       touchArticle(article);
       writeDatabase(database);
       return;
@@ -955,7 +1593,7 @@ function inferPreviewKind(filePath) {
   return 'none';
 }
 
-function addAssetBlock(articleId, sectionType, kind, sourcePath, modifiedBy = 'SciPaper Todo') {
+function addAssetBlock(articleId, sectionType, kind, sourcePath, modifiedBy = 'SciPaper Todo', customDescription = '') {
   const database = readDatabase();
   const article = findArticle(database, articleId);
   const section = findSection(article, sectionType);
@@ -969,7 +1607,8 @@ function addAssetBlock(articleId, sectionType, kind, sourcePath, modifiedBy = 'S
   fs.copyFileSync(sourcePath, destination);
 
   const storedValue = path.join('Attachments', safeName);
-  const description = kind === 'image' ? `图像附件 · ${originalName}` : `备份文件 · ${originalName}`;
+  const fallbackDescription = kind === 'image' ? `图像附件 · ${originalName}` : `备份文件 · ${originalName}`;
+  const description = normalizeText(customDescription) || fallbackDescription;
   const type = kind === 'image' ? 'Image' : 'FileLink';
 
   section.contentBlocks.push({
@@ -988,6 +1627,220 @@ function addAssetBlock(articleId, sectionType, kind, sourcePath, modifiedBy = 'S
 
   touchArticle(article);
   writeDatabase(database);
+}
+
+// === ProgressEntry / Finding / DailySession CRUD ===
+
+function addProgressEntry(payload, createdBy = 'user') {
+  const database = readDatabase();
+  if (!payload || typeof payload !== 'object') throw new Error('Payload required');
+  if (!payload.articleId) throw new Error('articleId is required');
+  if (!payload.title) throw new Error('title is required');
+
+  const article = findArticle(database, payload.articleId);
+  const today = new Date().toISOString().slice(0, 10);
+  const entry = normalizeProgressEntry({
+    id: createId(),
+    date: payload.date || today,
+    articleId: payload.articleId,
+    kind: payload.kind,
+    title: payload.title,
+    detail: payload.detail,
+    sectionId: payload.sectionId,
+    findingId: payload.findingId,
+    citationId: payload.citationId,
+    minutesSpent: payload.minutesSpent,
+    createdBy,
+  });
+
+  database.progressEntries = database.progressEntries || [];
+  database.progressEntries.unshift(entry);
+
+  // 自动挂到当天 session（如果存在）
+  const session = (database.dailySessions || []).find((s) => s.date === entry.date);
+  if (session && !session.progressEntryIds.includes(entry.id)) {
+    session.progressEntryIds.unshift(entry.id);
+  }
+
+  touchArticle(article);
+  writeDatabase(database);
+  return entry;
+}
+
+function updateProgressEntry(entryId, patch) {
+  const database = readDatabase();
+  database.progressEntries = database.progressEntries || [];
+  const idx = database.progressEntries.findIndex((e) => e.id === entryId);
+  if (idx < 0) throw new Error('ProgressEntry not found');
+
+  const existing = database.progressEntries[idx];
+  const merged = normalizeProgressEntry({ ...existing, ...patch, id: existing.id });
+  database.progressEntries[idx] = merged;
+  writeDatabase(database);
+  return merged;
+}
+
+function deleteProgressEntry(entryId) {
+  const database = readDatabase();
+  database.progressEntries = (database.progressEntries || []).filter((e) => e.id !== entryId);
+  database.dailySessions = (database.dailySessions || []).map((s) => ({
+    ...s,
+    progressEntryIds: s.progressEntryIds.filter((id) => id !== entryId),
+  }));
+  writeDatabase(database);
+}
+
+function listProgressEntries(filter = {}) {
+  const database = readDatabase();
+  let entries = database.progressEntries || [];
+  if (filter.articleId) entries = entries.filter((e) => e.articleId === filter.articleId);
+  if (filter.date) entries = entries.filter((e) => e.date === filter.date);
+  if (filter.dateFrom) entries = entries.filter((e) => e.date >= filter.dateFrom);
+  if (filter.dateTo) entries = entries.filter((e) => e.date <= filter.dateTo);
+  if (filter.kind) entries = entries.filter((e) => e.kind === filter.kind);
+  if (filter.findingId) entries = entries.filter((e) => e.findingId === filter.findingId);
+  return entries;
+}
+
+function linkProgressEntryToFinding(entryId, findingId) {
+  return updateProgressEntry(entryId, { findingId });
+}
+
+function addFinding(articleId, sectionType, payload) {
+  const database = readDatabase();
+  const article = findArticle(database, articleId);
+  const section = findSection(article, sectionType);
+  section.findings = Array.isArray(section.findings) ? section.findings : [];
+
+  const finding = normalizeFinding({
+    id: createId(),
+    sectionId: section.id,
+    title: payload.title,
+    description: payload.description,
+    status: payload.status || 'planned',
+    orderIndex: section.findings.length,
+  });
+
+  section.findings.push(finding);
+  touchArticle(article);
+  writeDatabase(database);
+  return finding;
+}
+
+function updateFinding(articleId, findingId, patch) {
+  const database = readDatabase();
+  const article = findArticle(database, articleId);
+  let updated = null;
+  for (const section of article.sections) {
+    if (!Array.isArray(section.findings)) continue;
+    const idx = section.findings.findIndex((f) => f.id === findingId);
+    if (idx >= 0) {
+      const merged = normalizeFinding({ ...section.findings[idx], ...patch, id: findingId, sectionId: section.id, updatedAt: now() });
+      section.findings[idx] = merged;
+      updated = merged;
+      break;
+    }
+  }
+  if (!updated) throw new Error('Finding not found');
+  touchArticle(article);
+  writeDatabase(database);
+  return updated;
+}
+
+function deleteFinding(articleId, findingId) {
+  const database = readDatabase();
+  const article = findArticle(database, articleId);
+  let removed = false;
+  for (const section of article.sections) {
+    if (!Array.isArray(section.findings)) continue;
+    const before = section.findings.length;
+    section.findings = section.findings.filter((f) => f.id !== findingId);
+    if (section.findings.length < before) {
+      section.findings = section.findings.map((f, i) => ({ ...f, orderIndex: i }));
+      removed = true;
+      break;
+    }
+  }
+  if (!removed) throw new Error('Finding not found');
+
+  // 解除 ProgressEntry 关联
+  database.progressEntries = (database.progressEntries || []).map((e) =>
+    e.findingId === findingId ? { ...e, findingId: undefined } : e,
+  );
+
+  touchArticle(article);
+  writeDatabase(database);
+}
+
+function listFindings(articleId, sectionType) {
+  const database = readDatabase();
+  const article = findArticle(database, articleId);
+  if (sectionType) {
+    const section = (article.sections || []).find((s) => s.type === sectionType);
+    return section?.findings || [];
+  }
+  return article.sections.flatMap((s) => (Array.isArray(s.findings) ? s.findings : []));
+}
+
+function startDailySession(date, planText = '') {
+  const database = readDatabase();
+  database.dailySessions = database.dailySessions || [];
+  const targetDate = date || new Date().toISOString().slice(0, 10);
+  const existing = database.dailySessions.find((s) => s.date === targetDate);
+  if (existing) {
+    if (planText) existing.planText = String(planText);
+    writeDatabase(database);
+    return existing;
+  }
+  const session = normalizeDailySession({
+    date: targetDate,
+    planText,
+    startedAt: now(),
+    progressEntryIds: [],
+  });
+  database.dailySessions.unshift(session);
+  writeDatabase(database);
+  return session;
+}
+
+function setDailyPlan(date, planText) {
+  const database = readDatabase();
+  database.dailySessions = database.dailySessions || [];
+  const targetDate = date || new Date().toISOString().slice(0, 10);
+  let session = database.dailySessions.find((s) => s.date === targetDate);
+  if (!session) {
+    session = normalizeDailySession({ date: targetDate, planText, startedAt: now(), progressEntryIds: [] });
+    database.dailySessions.unshift(session);
+  } else {
+    session.planText = String(planText || '');
+  }
+  writeDatabase(database);
+  return session;
+}
+
+function endDailySession(date, summaryText = '') {
+  const database = readDatabase();
+  database.dailySessions = database.dailySessions || [];
+  const targetDate = date || new Date().toISOString().slice(0, 10);
+  let session = database.dailySessions.find((s) => s.date === targetDate);
+  if (!session) {
+    session = normalizeDailySession({
+      date: targetDate,
+      startedAt: now(),
+      progressEntryIds: [],
+    });
+    database.dailySessions.unshift(session);
+  }
+  session.endedAt = now();
+  if (summaryText) session.summaryText = String(summaryText);
+  writeDatabase(database);
+  return session;
+}
+
+function getDailySession(date) {
+  const database = readDatabase();
+  const targetDate = date || new Date().toISOString().slice(0, 10);
+  return (database.dailySessions || []).find((s) => s.date === targetDate) || null;
 }
 
 function addReviewRound(articleId, payload) {
@@ -1420,6 +2273,19 @@ module.exports = {
   addCitation,
   deleteBlock,
   addAssetBlock,
+  addProgressEntry,
+  updateProgressEntry,
+  deleteProgressEntry,
+  listProgressEntries,
+  linkProgressEntryToFinding,
+  addFinding,
+  updateFinding,
+  deleteFinding,
+  listFindings,
+  startDailySession,
+  setDailyPlan,
+  endDailySession,
+  getDailySession,
   addReviewRound,
   addReviewComment,
   updateReviewCommentStatus,
@@ -1428,6 +2294,7 @@ module.exports = {
   openPathForBlock,
   getPreviewPayload,
   getArticleDirectory,
+  resolveBlockPath,
   getWritingGuidance,
   getArticleById,
   getSectionByArticle,
@@ -1443,6 +2310,20 @@ module.exports = {
   getPomodoroStats,
   getTheme,
   setTheme,
+  listProviders,
+  addProvider,
+  updateProvider,
+  deleteProvider,
+  setActiveProvider,
+  listWritingScenarios,
+  addWritingScenario,
+  updateWritingScenario,
+  deleteWritingScenario,
+  resetWritingScenarioToDefault,
+  getItalicGuide,
+  setItalicGuide,
+  getZoteroConfig,
+  setZoteroConfig,
   getWritingStats,
   addTag,
   removeTag,

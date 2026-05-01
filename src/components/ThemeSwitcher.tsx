@@ -5,16 +5,41 @@ interface ThemeSwitcherProps {
   onThemeChange: (theme: ThemeType) => Promise<void>
 }
 
-const THEMES: { type: ThemeType; label: string; emoji: string; colors: { bg: string; text: string } }[] = [
-  { type: 'light', label: '浅色', emoji: '☀️', colors: { bg: '#f8f0e3', text: '#43362b' } },
-  { type: 'dark', label: '深色', emoji: '🌙', colors: { bg: '#1a1a1a', text: '#e0e0e0' } },
-  { type: 'sepia', label: '护眼', emoji: '📜', colors: { bg: '#f5e6d3', text: '#5b4636' } },
-  { type: 'green', label: '清新', emoji: '🌿', colors: { bg: '#e8f5e9', text: '#2e7d32' } },
+interface ThemeOption {
+  type: ThemeType
+  label: string
+  caption: string
+  swatch: string[]
+  preview: 'soft' | 'pixel' | 'leaf'
+}
+
+const THEMES: ThemeOption[] = [
+  {
+    type: 'claude',
+    label: 'Claude',
+    caption: '温润珊瑚 · 学术纸感',
+    swatch: ['#F0EEE6', '#FFFFFF', '#D97757'],
+    preview: 'soft',
+  },
+  {
+    type: 'pixel',
+    label: 'Pixel',
+    caption: '黑白极客 · 像素硬朗',
+    swatch: ['#FFFFFF', '#000000', '#000000'],
+    preview: 'pixel',
+  },
+  {
+    type: 'fresh',
+    label: 'Fresh',
+    caption: '清新薄荷 · 护眼养目',
+    swatch: ['#F1F8F4', '#FFFFFF', '#2E8B57'],
+    preview: 'leaf',
+  },
 ]
 
 export function ThemeSwitcher({ currentTheme, onThemeChange }: ThemeSwitcherProps) {
   return (
-    <section className="panel-card">
+    <section className="panel-card theme-card">
       <div className="section-heading">
         <div>
           <p className="eyebrow">Theme</p>
@@ -23,26 +48,30 @@ export function ThemeSwitcher({ currentTheme, onThemeChange }: ThemeSwitcherProp
       </div>
 
       <div className="theme-grid">
-        {THEMES.map(theme => (
-          <button
-            key={theme.type}
-            className={`theme-button ${currentTheme === theme.type ? 'selected' : ''}`}
-            onClick={() => onThemeChange(theme.type)}
-            type="button"
-          >
-            <div
-              className="theme-preview"
-              style={{
-                background: theme.colors.bg,
-                color: theme.colors.text,
-                border: `2px solid ${currentTheme === theme.type ? 'var(--accent)' : 'var(--line)'}`
-              }}
+        {THEMES.map(theme => {
+          const selected = currentTheme === theme.type
+          return (
+            <button
+              key={theme.type}
+              className={`theme-button ${selected ? 'selected' : ''}`}
+              onClick={() => onThemeChange(theme.type)}
+              type="button"
+              aria-pressed={selected}
             >
-              <span className="theme-emoji">{theme.emoji}</span>
-              <span className="theme-label">{theme.label}</span>
-            </div>
-          </button>
-        ))}
+              <div className={`theme-preview preview-${theme.preview}`}>
+                <span className="theme-swatches" aria-hidden="true">
+                  {theme.swatch.map((color, idx) => (
+                    <span key={idx} className="theme-swatch" style={{ background: color }} />
+                  ))}
+                </span>
+                <span className="theme-meta">
+                  <span className="theme-label">{theme.label}</span>
+                  <span className="theme-caption">{theme.caption}</span>
+                </span>
+              </div>
+            </button>
+          )
+        })}
       </div>
     </section>
   )

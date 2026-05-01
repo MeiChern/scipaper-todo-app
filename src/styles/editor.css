@@ -1,0 +1,328 @@
+/* =========================================================================
+   Editor — SectionEditor surface.
+   Classes: text-summary-card, text-block-preview, asset-card, asset-preview,
+            asset-meta, version-list, version-item, version-header,
+            version-author, version-date, version-description,
+            diff-view, diff-content, diff-line, diff-indicator, diff-text,
+            diff-added, diff-removed, preview-modal, preview-stage,
+            preview-image, preview-frame, history-panel, modal-grid
+   ========================================================================= */
+
+/* ---------- Text block preview ---------- */
+.text-summary-card {
+  gap: var(--sp-3);
+}
+
+.text-block-preview {
+  white-space: pre-wrap;
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  line-height: 1.75;
+  color: var(--c-ink);
+  padding: var(--sp-3) 0 0;
+  border-top: 1px dashed var(--c-line);
+}
+
+[data-theme="pixel"] .text-block-preview {
+  border-top: 2px dashed #000;
+  font-family: var(--font-mono);
+}
+
+/* ---------- Asset card (image / file) ---------- */
+.asset-card {
+  gap: var(--sp-3);
+}
+
+.asset-preview {
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  border-radius: var(--r-md);
+  border: 1px solid var(--c-line);
+  background: var(--c-panel-sub);
+}
+
+[data-theme="pixel"] .asset-preview {
+  border: 2px solid #000;
+  border-radius: 0;
+  background: #FFF;
+}
+
+.asset-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  background: var(--c-panel-sub);
+  border-radius: var(--r-md);
+  font-size: var(--fs-xs);
+  color: var(--c-ink-muted);
+  font-family: var(--font-mono);
+}
+
+.asset-meta p {
+  margin: 0;
+}
+
+[data-theme="pixel"] .asset-meta {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+}
+
+/* ---------- Version list (Diff history) ---------- */
+.version-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.version-item {
+  padding: var(--sp-3);
+  background: var(--c-panel-sub);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: background var(--t-fast), border-color var(--t-fast);
+}
+
+.version-item:hover {
+  background: var(--c-panel);
+  border-color: var(--c-line-strong);
+}
+
+.version-item.selected {
+  background: var(--c-accent-tint);
+  border-color: var(--c-accent);
+}
+
+.version-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--sp-2);
+  margin-bottom: 4px;
+}
+
+.version-author {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semi);
+  color: var(--c-ink);
+}
+
+.version-date {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--c-ink-faint);
+}
+
+.version-description {
+  font-size: var(--fs-xs);
+  color: var(--c-ink-muted);
+  margin: 0;
+}
+
+[data-theme="pixel"] .version-item {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+}
+
+[data-theme="pixel"] .version-item:hover {
+  box-shadow: 3px 3px 0 #000;
+}
+
+[data-theme="pixel"] .version-item.selected {
+  background: #000;
+  color: #FFF;
+  border-color: #000;
+  box-shadow: 3px 3px 0 #000;
+}
+
+[data-theme="pixel"] .version-item.selected .version-author,
+[data-theme="pixel"] .version-item.selected .version-date,
+[data-theme="pixel"] .version-item.selected .version-description {
+  color: #FFF;
+}
+
+/* ---------- Diff view ---------- */
+.diff-view {
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--c-line);
+}
+
+[data-theme="pixel"] .diff-view {
+  border-top: 2px solid #000;
+}
+
+.diff-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: var(--sp-3);
+  background: var(--c-panel-sub);
+  border-radius: var(--r-md);
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  overflow-x: auto;
+}
+
+[data-theme="pixel"] .diff-content {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+}
+
+.diff-line {
+  display: flex;
+  gap: var(--sp-2);
+  padding: 1px var(--sp-2);
+}
+
+.diff-indicator {
+  width: 14px;
+  flex-shrink: 0;
+  text-align: center;
+  color: var(--c-ink-faint);
+  user-select: none;
+}
+
+.diff-text {
+  flex: 1;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.diff-added {
+  background: color-mix(in srgb, var(--c-success) 14%, transparent);
+}
+
+.diff-added .diff-indicator {
+  color: var(--c-success);
+}
+
+.diff-removed {
+  background: color-mix(in srgb, var(--c-danger) 14%, transparent);
+}
+
+.diff-removed .diff-indicator {
+  color: var(--c-danger);
+}
+
+[data-theme="pixel"] .diff-added {
+  background: #FFF;
+  border-left: 4px solid #000;
+}
+
+[data-theme="pixel"] .diff-added .diff-indicator,
+[data-theme="pixel"] .diff-removed .diff-indicator {
+  color: #000;
+  font-weight: var(--fw-bold);
+}
+
+[data-theme="pixel"] .diff-removed {
+  background: #EAEAEA;
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+/* ---------- Preview modal stage ---------- */
+.preview-modal {
+  height: calc(100vh - 44px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.preview-stage {
+  flex: 1 1 auto;
+  min-height: 360px;
+  display: grid;
+  place-items: center;
+  margin: var(--sp-3) 0;
+  padding: var(--sp-3);
+  background: var(--c-panel-sub);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+[data-theme="pixel"] .preview-stage {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+}
+
+.preview-frame {
+  width: 100%;
+  height: 100%;
+  min-height: 70vh;
+  border: 0;
+  background: #FFF;
+}
+
+/* ---------- Modal grid (split: editor + history) ---------- */
+.modal-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: var(--sp-4);
+  margin: var(--sp-4) 0;
+}
+
+.history-panel {
+  align-self: start;
+}
+
+@media (max-width: 1180px) {
+  .modal-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Revision list (review + version side panels) ---------- */
+.revision-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.revision-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--sp-3);
+  background: var(--c-panel-sub);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+  font-size: var(--fs-sm);
+}
+
+.revision-item strong {
+  font-size: var(--fs-sm);
+  color: var(--c-ink);
+}
+
+.revision-item p {
+  color: var(--c-ink-muted);
+  font-size: var(--fs-xs);
+}
+
+.revision-item span {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--c-ink-faint);
+}
+
+[data-theme="pixel"] .revision-item {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+}

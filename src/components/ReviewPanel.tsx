@@ -1,12 +1,12 @@
 import { useState } from 'react'
-import type { Article, CommentStatus, ReviewComment, ReviewRound } from '../types'
+import type { Article, CommentStatus, ReviewComment, ReviewCommentType, ReviewRound } from '../types'
 
 interface ReviewPanelProps {
   article: Article
   onAddRound: (payload: { submittedAt: string; journalName: string; manuscriptNumber: string }) => Promise<void>
   onAddComment: (
     roundId: string,
-    payload: { reviewerId: string; originalText: string; type: 'Major' | 'Minor'; suggestedSection: string },
+    payload: { reviewerId: string; originalText: string; type: ReviewCommentType; suggestedSection: string },
   ) => Promise<void>
   onUpdateStatus: (roundId: string, commentId: string, status: CommentStatus) => Promise<void>
   onAddRevision: (roundId: string, commentId: string, payload: { description: string; responseText: string; markCompleted?: boolean }) => Promise<void>
@@ -59,13 +59,13 @@ function CommentComposer({
   round: ReviewRound
   onSubmit: (
     roundId: string,
-    payload: { reviewerId: string; originalText: string; type: 'Major' | 'Minor'; suggestedSection: string },
+    payload: { reviewerId: string; originalText: string; type: ReviewCommentType; suggestedSection: string },
   ) => Promise<void>
 }) {
   const [draft, setDraft] = useState({
     reviewerId: '',
     originalText: '',
-    type: 'Major' as 'Major' | 'Minor',
+    type: 'Major' as ReviewCommentType,
     suggestedSection: '',
   })
 
@@ -91,7 +91,7 @@ function CommentComposer({
         </label>
         <label className="field">
           <span>问题等级</span>
-          <select value={draft.type} onChange={(event) => setDraft({ ...draft, type: event.target.value as 'Major' | 'Minor' })}>
+          <select value={draft.type} onChange={(event) => setDraft({ ...draft, type: event.target.value as ReviewCommentType })}>
             <option value="Major">Major</option>
             <option value="Minor">Minor</option>
           </select>

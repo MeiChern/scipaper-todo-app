@@ -1,0 +1,1009 @@
+/* =========================================================================
+   Compat layer.
+   Bridges existing component class names that the designer's stylesheets
+   didn't cover (mood/theme switcher/old pomodoro shape/old stats/streak
+   structure/wizard internals/misc) to the new token system.
+
+   Everything here uses tokens from tokens.css — no magic values.
+   Pixel theme overrides where pixel needs structural change (radius/border).
+   ========================================================================= */
+
+/* =========================================================================
+   Route shell — the right column inside .app-shell that hosts all views.
+   Views control their own padding/border;  .route-main is just a flex column.
+   ========================================================================= */
+.route-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+  min-height: 100vh;
+}
+
+/* =========================================================================
+   AppSidebar additions — search field, create-buttons group, nav-aside,
+   disabled nav state. Slot into the existing .home-sidebar layout.
+   ========================================================================= */
+.sidebar-search {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--c-panel);
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--r-pill);
+  color: var(--c-ink);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+}
+
+.sidebar-search:focus {
+  outline: none;
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 3px var(--c-accent-soft);
+}
+
+.sidebar-search::placeholder {
+  color: var(--c-ink-faint);
+}
+
+[data-theme="pixel"] .sidebar-search {
+  border: 2px solid #000;
+  border-radius: 0;
+  background: #FFF;
+}
+
+[data-theme="pixel"] .sidebar-search:focus {
+  box-shadow: 3px 3px 0 #000;
+}
+
+.sidebar-create {
+  display: grid;
+  gap: var(--sp-2);
+}
+
+.sidebar-progress {
+  display: grid;
+  gap: 6px;
+}
+
+.sidebar-progress-line {
+  display: baseline;
+}
+
+.sidebar-progress-num {
+  font-family: var(--font-heading);
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+  color: var(--c-accent);
+  line-height: 1;
+}
+
+.sidebar-progress-goal {
+  font-size: var(--fs-sm);
+  color: var(--c-ink-muted);
+  margin-left: 4px;
+}
+
+.sidebar-progress-bar {
+  height: 6px;
+  background: var(--c-bg-deep);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+
+.sidebar-progress-fill {
+  height: 100%;
+  background: var(--c-accent);
+  transition: width var(--t-base);
+}
+
+[data-theme="pixel"] .sidebar-progress-bar {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+  height: 12px;
+}
+
+[data-theme="pixel"] .sidebar-progress-fill {
+  background: repeating-linear-gradient(90deg, #000 0, #000 6px, #FFF 6px, #FFF 8px);
+}
+
+.home-actions--3 {
+  grid-template-columns: repeat(3, 1fr) !important;
+}
+
+.home-nav-aside {
+  margin-left: auto;
+  padding-left: var(--sp-2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-ink-faint);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.home-nav-item.is-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.home-nav-item.is-disabled:hover {
+  background: transparent;
+  color: var(--c-ink-muted);
+}
+
+[data-theme="pixel"] .home-nav-aside {
+  color: #000;
+}
+
+/* =========================================================================
+   Insights view — multi-card grid for stats / pomodoro / mood / streak
+   ========================================================================= */
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: var(--sp-4);
+}
+
+@media (max-width: 1100px) {
+  .insights-grid { grid-template-columns: 1fr; }
+}
+
+/* =========================================================================
+   Library view extras
+   ========================================================================= */
+.library-item-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0 0 var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--c-ink-muted);
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+}
+
+/* =========================================================================
+   Modal — internals not covered by modal.css
+   ========================================================================= */
+.modal-subtitle {
+  margin: 4px 0 0;
+  font-size: var(--fs-sm);
+  color: var(--c-ink-muted);
+}
+
+.modal-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  gap: var(--sp-5);
+}
+
+@media (max-width: 920px) {
+  .modal-grid { grid-template-columns: 1fr; }
+}
+
+/* Wizard internals (the per-step body and final-confirm summary) */
+.wizard-stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.wizard-confirm {
+  display: grid;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  background: var(--c-panel-sub);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+}
+
+[data-theme="pixel"] .wizard-confirm {
+  border: 2px solid #000;
+  border-radius: 0;
+  background: #FFF;
+}
+
+.confirm-card {
+  padding: var(--sp-3);
+  background: var(--c-panel);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-sm);
+}
+
+.confirm-card strong {
+  display: block;
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--c-ink-muted);
+  margin-bottom: 4px;
+}
+
+.confirm-info {
+  display: grid;
+  gap: 4px;
+  font-size: var(--fs-sm);
+  color: var(--c-ink);
+}
+
+[data-theme="pixel"] .confirm-card {
+  border: 2px solid #000;
+  border-radius: 0;
+}
+
+/* =========================================================================
+   ThemeSwitcher — fully unstyled by designer
+   ========================================================================= */
+.theme-card .section-heading { margin-bottom: 4px; }
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+
+.theme-button {
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.theme-preview {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 12px 14px;
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+  background: var(--c-panel-sub);
+  transition:
+    border-color var(--t-fast),
+    background var(--t-fast),
+    transform var(--t-fast),
+    box-shadow var(--t-fast);
+}
+
+.theme-button:hover .theme-preview {
+  border-color: var(--c-accent);
+  transform: translateY(-1px);
+}
+
+.theme-button.selected .theme-preview {
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 3px var(--c-accent-soft);
+  background: var(--c-panel);
+}
+
+.theme-swatches {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.theme-swatch {
+  width: 22px;
+  height: 32px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.theme-swatch:first-child { border-radius: 6px 0 0 6px; }
+.theme-swatch:last-child  { border-radius: 0 6px 6px 0; }
+.theme-swatch:not(:first-child) { margin-left: -1px; }
+
+.theme-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.theme-label {
+  font-family: var(--font-heading);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semi);
+  color: var(--c-ink);
+}
+
+.theme-caption {
+  font-size: var(--fs-xs);
+  color: var(--c-ink-muted);
+  letter-spacing: 0.02em;
+}
+
+[data-theme="pixel"] .theme-preview {
+  border: 2px solid #000;
+  border-radius: 0;
+  background: #FFF;
+}
+
+[data-theme="pixel"] .theme-button.selected .theme-preview {
+  background: #000;
+  color: #FFF;
+  box-shadow: 4px 4px 0 #000;
+}
+
+[data-theme="pixel"] .theme-button.selected .theme-label,
+[data-theme="pixel"] .theme-button.selected .theme-caption {
+  color: #FFF;
+}
+
+[data-theme="pixel"] .theme-swatch {
+  border-radius: 0 !important;
+  margin-left: 0 !important;
+  border: 1px solid #000;
+}
+
+[data-theme="pixel"] .preview-pixel .theme-swatch + .theme-swatch {
+  border-left: 0;
+}
+
+/* =========================================================================
+   Pomodoro — the existing component uses an SVG-based circle timer
+   (timer-circle / timer-display / timer-time / timer-bg / timer-progress
+    / pomodoro-stats / pomodoro-stat / duration-selector / duration-options
+    / duration-button / timer-controls / pomodoro-timer wrapper)
+   ========================================================================= */
+.pomodoro-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+
+.pomodoro-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--c-panel-sub);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-sm);
+}
+
+.pomodoro-stat-label {
+  font-size: var(--fs-xs);
+  color: var(--c-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.pomodoro-stat-value {
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semi);
+  color: var(--c-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.pomodoro-timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+.timer-display {
+  position: relative;
+  width: 220px;
+  height: 220px;
+}
+
+.timer-circle {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.timer-circle svg {
+  width: 100%;
+  height: 100%;
+}
+
+.timer-progress {
+  transition: stroke-dashoffset var(--t-base);
+}
+
+.timer-time {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 2.6rem;
+  font-weight: var(--fw-bold);
+  color: var(--c-ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.duration-selector {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  align-items: center;
+  width: 100%;
+}
+
+.duration-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  justify-content: center;
+}
+
+.duration-button {
+  padding: 8px 14px;
+  background: var(--c-panel-sub);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-pill);
+  color: var(--c-ink);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  transition:
+    background var(--t-fast),
+    border-color var(--t-fast),
+    color var(--t-fast),
+    transform var(--t-fast);
+}
+
+.duration-button:hover {
+  border-color: var(--c-accent);
+  color: var(--c-accent-strong);
+}
+
+.duration-button.selected {
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+  border-color: var(--c-accent);
+}
+
+.timer-controls {
+  display: flex;
+  gap: var(--sp-3);
+}
+
+[data-theme="pixel"] .pomodoro-stat {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+}
+
+[data-theme="pixel"] .duration-button {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: 2px 2px 0 #000;
+}
+
+[data-theme="pixel"] .duration-button.selected {
+  background: #000;
+  color: #FFF;
+}
+
+[data-theme="pixel"] .duration-button:hover {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 #000;
+}
+
+[data-theme="pixel"] .timer-time {
+  font-family: var(--font-mono);
+  color: #000;
+}
+
+/* =========================================================================
+   Mood Tracker
+   ========================================================================= */
+.today-mood {
+  padding: var(--sp-4);
+  background: var(--c-accent-soft);
+  border: 1px solid var(--c-accent);
+  border-radius: var(--r-md);
+  color: var(--c-accent-strong);
+}
+
+.today-mood p {
+  margin: 0;
+  font-size: var(--fs-md);
+}
+
+.today-mood .mood-note {
+  margin-top: 6px;
+  font-size: var(--fs-sm);
+  color: var(--c-ink-muted);
+}
+
+[data-theme="pixel"] .today-mood {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+  color: #000;
+}
+
+.mood-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--sp-2);
+}
+
+@media (max-width: 600px) {
+  .mood-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.mood-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  background: var(--c-panel-sub);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-sm);
+  color: var(--c-ink);
+  cursor: pointer;
+  transition:
+    background var(--t-fast),
+    border-color var(--t-fast),
+    transform var(--t-fast);
+}
+
+.mood-button:hover {
+  border-color: var(--c-accent);
+  transform: translateY(-1px);
+}
+
+.mood-button.selected {
+  background: var(--c-accent-tint);
+  border-color: var(--c-accent);
+}
+
+.mood-emoji {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.mood-label {
+  font-size: var(--fs-xs);
+  color: var(--c-ink-muted);
+}
+
+.mood-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-top: var(--sp-3);
+}
+
+.mood-history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--c-line);
+}
+
+.mood-entry {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 8px 10px;
+  background: var(--c-panel-sub);
+  border-radius: var(--r-sm);
+  font-size: var(--fs-sm);
+}
+
+.mood-date {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--c-ink-muted);
+  min-width: 84px;
+}
+
+.mood-note {
+  color: var(--c-ink-muted);
+  font-size: var(--fs-sm);
+}
+
+[data-theme="pixel"] .mood-button {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+  box-shadow: 2px 2px 0 #000;
+}
+
+[data-theme="pixel"] .mood-button.selected {
+  background: #000;
+  color: #FFF;
+}
+
+[data-theme="pixel"] .mood-button.selected .mood-label {
+  color: #FFF;
+}
+
+[data-theme="pixel"] .mood-button .mood-emoji {
+  filter: grayscale(1) contrast(1.2);
+}
+
+[data-theme="pixel"] .mood-history {
+  border-top: 2px solid #000;
+}
+
+[data-theme="pixel"] .mood-entry {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+}
+
+/* =========================================================================
+   WritingStreak — the original 3-stat row + daily progress + goal input.
+   Heatmap is already in stats.css (data-level attribute).
+   ========================================================================= */
+.streak-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-2);
+}
+
+.streak-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--c-panel-sub);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-sm);
+}
+
+.streak-stat-label {
+  font-size: var(--fs-xs);
+  color: var(--c-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.streak-stat-value {
+  font-family: var(--font-heading);
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semi);
+  color: var(--c-ink);
+}
+
+[data-theme="pixel"] .streak-stat {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+}
+
+[data-theme="pixel"] .streak-stat-value {
+  font-family: var(--font-mono);
+}
+
+.daily-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: var(--fs-sm);
+  color: var(--c-ink-muted);
+}
+
+.progress-header span:last-child {
+  font-family: var(--font-mono);
+  color: var(--c-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--c-panel-sub);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--c-accent-strong), var(--c-accent));
+  transition: width var(--t-base);
+}
+
+.goal-met {
+  font-size: var(--fs-sm);
+  color: var(--c-success);
+  font-weight: var(--fw-semi);
+}
+
+.goal-input-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+
+.goal-input-row input {
+  padding: 8px 10px;
+  background: var(--c-panel);
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--r-input);
+  color: var(--c-ink);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+}
+
+.goal-input-row input:focus {
+  outline: none;
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 3px var(--c-accent-soft);
+}
+
+[data-theme="pixel"] .progress-bar {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+  height: 14px;
+}
+
+[data-theme="pixel"] .progress-fill {
+  background: repeating-linear-gradient(90deg, #000 0, #000 8px, #FFF 8px, #FFF 10px);
+}
+
+[data-theme="pixel"] .goal-input-row input {
+  border: 2px solid #000;
+  border-radius: 0;
+  background: #FFF;
+}
+
+[data-theme="pixel"] .goal-input-row input:focus {
+  box-shadow: 3px 3px 0 #000;
+}
+
+[data-theme="pixel"] .goal-met {
+  color: #000;
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+}
+
+.heatmap-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+
+/* =========================================================================
+   WordCountStats — section bar chart + summary numbers
+   ========================================================================= */
+.word-count {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-3);
+  background: var(--c-panel-sub);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+}
+
+.section-counts {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+
+.section-count-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 6px 10px;
+  background: var(--c-panel-sub);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-sm);
+  font-size: var(--fs-sm);
+}
+
+.section-bars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+
+.section-bar-item {
+  display: grid;
+  grid-template-columns: 110px 1fr 60px;
+  align-items: center;
+  gap: var(--sp-3);
+  font-size: var(--fs-sm);
+}
+
+.section-name {
+  color: var(--c-ink-muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+}
+
+.section-bar {
+  height: 8px;
+  background: var(--c-panel-sub);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+
+.section-bar-fill {
+  height: 100%;
+  background: var(--c-accent);
+  transition: width var(--t-base);
+}
+
+.section-words {
+  font-family: var(--font-mono);
+  text-align: right;
+  color: var(--c-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+[data-theme="pixel"] .word-count,
+[data-theme="pixel"] .section-count-item {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+}
+
+[data-theme="pixel"] .section-bar {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+  height: 14px;
+}
+
+[data-theme="pixel"] .section-bar-fill {
+  background: #000;
+}
+
+/* =========================================================================
+   WritingStats — summary grid + word cloud
+   ========================================================================= */
+.stats-overview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--sp-3);
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--sp-4);
+  background: var(--c-panel-sub);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stat-number {
+  font-family: var(--font-heading);
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
+  color: var(--c-ink);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--c-line);
+}
+
+.word-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  background: var(--c-panel-sub);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+}
+
+.word-tag {
+  padding: 4px 10px;
+  background: var(--c-accent-soft);
+  color: var(--c-accent-strong);
+  border-radius: var(--r-pill);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+}
+
+[data-theme="pixel"] .stat-card {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+  box-shadow: 3px 3px 0 #000;
+}
+
+[data-theme="pixel"] .stat-number {
+  font-family: var(--font-mono);
+}
+
+[data-theme="pixel"] .stats-section {
+  border-top: 2px solid #000;
+}
+
+[data-theme="pixel"] .word-cloud {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+}
+
+[data-theme="pixel"] .word-tag {
+  background: #FFF;
+  color: #000;
+  border: 2px solid #000;
+  border-radius: 0;
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* =========================================================================
+   Outline + timeline (in OutlineView / ReviewPanel)
+   ========================================================================= */
+.outline-article {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  background: var(--c-panel-sub);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+}
+
+[data-theme="pixel"] .outline-article {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+}
+
+.timeline-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-xs);
+  color: var(--c-ink-muted);
+  font-family: var(--font-mono);
+}
+

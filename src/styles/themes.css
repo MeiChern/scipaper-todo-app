@@ -1,0 +1,166 @@
+/* =========================================================================
+   Themes — per-theme decorative layers and "ambient" extras that don't
+   belong on individual components. All colors / radii / shadows live in
+   tokens.css; this file is purely about FEEL.
+
+   Note: font imports were moved into the host HTML (<link> tags) so that
+   sandboxed previews don't fail the stylesheet on a blocked @import.
+   ========================================================================= */
+
+/* =========================================================================
+   THEME · CLAUDE — warm coral on cream, soft radial glow
+   ========================================================================= */
+[data-theme="claude"] body {
+  background: var(--c-bg);
+  background-image:
+    radial-gradient(circle at 18% 12%, color-mix(in srgb, var(--c-accent) 12%, transparent), transparent 45%),
+    radial-gradient(circle at 92% 88%, color-mix(in srgb, var(--c-accent-strong) 8%, transparent), transparent 50%);
+  background-attachment: fixed;
+}
+
+/* Subtle paper texture on main panels */
+[data-theme="claude"] .workspace::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.4;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.85  0 0 0 0 0.78  0 0 0 0 0.72  0 0 0 0.025 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  mix-blend-mode: multiply;
+}
+
+[data-theme="claude"] .workspace { position: relative; }
+[data-theme="claude"] .workspace > * { position: relative; z-index: 1; }
+
+/* =========================================================================
+   THEME · PIXEL — pure B&W, 1-bit, hard offset shadows, scanline overlay
+   ========================================================================= */
+[data-theme="pixel"] body {
+  background: var(--c-bg);
+  /* 8px dot grid — the whole app sits on graph paper */
+  background-image:
+    radial-gradient(circle, #000 1px, transparent 1px);
+  background-size: 16px 16px;
+  background-position: 0 0;
+}
+
+/* Optional CRT-style scanline overlay on hero / modal */
+[data-theme="pixel"] .modal-overlay::before,
+[data-theme="pixel"] .hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.04) 0,
+    rgba(0, 0, 0, 0.04) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  z-index: 1;
+}
+
+[data-theme="pixel"] .modal-overlay { position: fixed; }
+[data-theme="pixel"] .modal-overlay > * { position: relative; z-index: 2; }
+
+/* Disable smooth animations across the board — pixel UIs are stepped */
+[data-theme="pixel"] *,
+[data-theme="pixel"] *::before,
+[data-theme="pixel"] *::after {
+  transition-timing-function: steps(2, end) !important;
+}
+
+/* Caret blink in pixel theme — classic terminal cursor */
+[data-theme="pixel"] input:focus,
+[data-theme="pixel"] textarea:focus {
+  caret-color: #000;
+  animation: pixel-caret 1s steps(2, end) infinite;
+}
+
+@keyframes pixel-caret {
+  0%, 49%   { caret-color: #000; }
+  50%, 100% { caret-color: transparent; }
+}
+
+/* =========================================================================
+   THEME · FRESH — mint + serif, soft sage gradient, organic curves
+   ========================================================================= */
+[data-theme="fresh"] body {
+  background: var(--c-bg);
+  background-image:
+    radial-gradient(ellipse at 20% 0%, color-mix(in srgb, var(--c-accent) 18%, transparent), transparent 55%),
+    radial-gradient(ellipse at 100% 100%, color-mix(in srgb, var(--c-accent-strong) 14%, transparent), transparent 60%);
+  background-attachment: fixed;
+}
+
+/* Soft organic shape behind hero */
+[data-theme="fresh"] .hero {
+  position: relative;
+  isolation: isolate;
+}
+
+[data-theme="fresh"] .hero::after {
+  content: "";
+  position: absolute;
+  top: -80px;
+  right: -80px;
+  width: 320px;
+  height: 320px;
+  border-radius: 50% 60% 70% 40% / 50% 40% 60% 50%;
+  background: var(--c-accent-soft);
+  opacity: 0.5;
+  filter: blur(28px);
+  z-index: -1;
+  pointer-events: none;
+  animation: fresh-blob 18s ease-in-out infinite alternate;
+}
+
+@keyframes fresh-blob {
+  0%   { border-radius: 50% 60% 70% 40% / 50% 40% 60% 50%; transform: rotate(0deg) scale(1); }
+  50%  { border-radius: 60% 40% 50% 70% / 60% 50% 40% 50%; transform: rotate(20deg) scale(1.1); }
+  100% { border-radius: 70% 50% 40% 60% / 40% 60% 50% 70%; transform: rotate(-10deg) scale(0.95); }
+}
+
+/* Drop-cap on first paragraph of articles in fresh theme */
+[data-theme="fresh"] .article-body > p:first-of-type::first-letter {
+  font-family: var(--font-heading);
+  font-size: 3.4em;
+  font-weight: var(--fw-bold);
+  float: left;
+  line-height: 0.85;
+  margin: 6px 10px 0 0;
+  color: var(--c-accent-strong);
+}
+
+/* =========================================================================
+   Theme switcher chip group (lives in shell.css for layout, but we provide
+   a per-theme highlight here so the active chip reads correctly)
+   ========================================================================= */
+.theme-chip { position: relative; }
+
+[data-theme="claude"] .theme-chip[data-theme-key="claude"]::after,
+[data-theme="pixel"]  .theme-chip[data-theme-key="pixel"]::after,
+[data-theme="fresh"]  .theme-chip[data-theme-key="fresh"]::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border: 2px solid var(--c-accent);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+[data-theme="pixel"] .theme-chip[data-theme-key="pixel"]::after {
+  border: 2px solid #000;
+  inset: -4px;
+  border-radius: 0;
+}
+
+/* =========================================================================
+   prefers-reduced-motion — kill all decorative animations
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  [data-theme="fresh"] .hero::after { animation: none; }
+  [data-theme="pixel"] input:focus,
+  [data-theme="pixel"] textarea:focus { animation: none; }
+}

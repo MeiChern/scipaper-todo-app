@@ -1,0 +1,163 @@
+/* =========================================================================
+   Nav — section navigation (chips) and sub-nav dividers.
+   Classes: section-nav, nav-group, nav-chip, nav-chip.active,
+            nav-chip.utility, nav-divider
+   ========================================================================= */
+
+.section-nav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-3);
+  background: var(--c-panel-sub);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-lg);
+  align-self: start;
+  position: sticky;
+  top: var(--sp-4);
+}
+
+[data-theme="pixel"] .section-nav {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+  box-shadow: 4px 4px 0 #000;
+}
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ---------- Chip ---------- */
+.nav-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  padding: 10px 14px;
+  text-align: left;
+  background: transparent;
+  color: var(--c-ink);
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  font-family: var(--font-body);
+  letter-spacing: 0.01em;
+  transition:
+    background var(--t-fast),
+    color var(--t-fast),
+    border-color var(--t-fast);
+}
+
+.nav-chip:hover {
+  background: var(--c-panel);
+  border-color: var(--c-line);
+}
+
+.nav-chip.active {
+  background: var(--c-accent-tint);
+  border-color: var(--c-accent);
+  color: var(--c-accent-strong);
+  font-weight: var(--fw-semi);
+}
+
+.nav-chip em {
+  font-style: normal;
+  font-size: var(--fs-xs);
+  color: var(--c-ink-faint);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--c-ink) 6%, transparent);
+}
+
+.nav-chip.active em {
+  background: var(--c-on-accent);
+  color: var(--c-accent-strong);
+}
+
+/* Pixel theme: chips are inverted blocks */
+[data-theme="pixel"] .nav-chip {
+  border: 2px solid transparent;
+  background: #FFF;
+  text-transform: uppercase;
+  font-weight: var(--fw-bold);
+  letter-spacing: 0.05em;
+  border-radius: 0;
+}
+
+[data-theme="pixel"] .nav-chip:hover {
+  border-color: #000;
+  box-shadow: 3px 3px 0 #000;
+}
+
+[data-theme="pixel"] .nav-chip.active {
+  background: #000;
+  color: #FFF;
+  border-color: #000;
+  box-shadow: 3px 3px 0 #000;
+}
+
+[data-theme="pixel"] .nav-chip em {
+  background: #000;
+  color: #FFF;
+  border-radius: 0;
+  padding: 1px 6px;
+}
+
+[data-theme="pixel"] .nav-chip.active em {
+  background: #FFF;
+  color: #000;
+}
+
+/* ---------- Utility chip (single-row, centered) ---------- */
+.nav-chip.utility {
+  justify-content: flex-start;
+  color: var(--c-ink-muted);
+  font-weight: var(--fw-regular);
+}
+
+.nav-chip.utility::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--c-ink-faint);
+  flex-shrink: 0;
+}
+
+[data-theme="pixel"] .nav-chip.utility::before {
+  border-radius: 0;
+  width: 6px;
+  height: 6px;
+  background: #000;
+}
+
+.nav-chip.utility.active {
+  color: var(--c-accent-strong);
+}
+
+.nav-chip.utility.active::before {
+  background: var(--c-accent);
+}
+
+[data-theme="pixel"] .nav-chip.utility.active::before {
+  background: #FFF;
+}
+
+/* ---------- Divider ---------- */
+.nav-divider {
+  height: 1px;
+  background: var(--c-line);
+  margin: var(--sp-2) calc(var(--sp-3) * -1);
+}
+
+[data-theme="pixel"] .nav-divider {
+  height: 2px;
+  background: #000;
+  margin: var(--sp-2) calc(var(--sp-3) * -1);
+}

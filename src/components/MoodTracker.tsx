@@ -4,103 +4,103 @@ import type { MoodType, MoodEntry } from '../types'
 interface MoodTrackerProps {
   moodHistory: MoodEntry[]
   onAddMood: (mood: MoodType, note?: string) => Promise<void>
+  /**
+   * Called immediately after a mood is recorded.
+   * Used to also write a ProgressEntry kind='mood'.
+   */
+  onMoodRecorded?: (mood: MoodType, label: string, emoji: string, note?: string) => void
 }
 
 const MOOD_OPTIONS: { type: MoodType; emoji: string; label: string }[] = [
   { type: 'Happy', emoji: '😊', label: '开心' },
   { type: 'Calm', emoji: '😌', label: '平静' },
+  { type: 'Excited', emoji: '🤩', label: '兴奋' },
+  { type: 'Motivated', emoji: '🔥', label: '动力' },
+  { type: 'Grateful', emoji: '🥰', label: '感恩' },
+  { type: 'Tired', emoji: '😴', label: '疲惫' },
   { type: 'Sad', emoji: '😔', label: '难过' },
   { type: 'Frustrated', emoji: '😤', label: '沮丧' },
   { type: 'Anxious', emoji: '😰', label: '焦虑' },
-  { type: 'Excited', emoji: '🤩', label: '兴奋' },
-  { type: 'Tired', emoji: '😴', label: '疲惫' },
-  { type: 'Grateful', emoji: '🥰', label: '感恩' },
-  { type: 'Motivated', emoji: '🔥', label: '动力满满' },
   { type: 'Melancholy', emoji: '🌧️', label: '忧郁' },
 ]
 
-export function MoodTracker({ moodHistory, onAddMood }: MoodTrackerProps) {
-  const [selectedMood, setSelectedMood] = useState<MoodType | null>(null)
+export function MoodTracker({ moodHistory, onAddMood, onMoodRecorded }: MoodTrackerProps) {
+  const today = new Date().toISOString().slice(0, 10)
+  const todayMood = moodHistory.find((m) => m.date === today)
+  const [pickerOpen, setPickerOpen] = useState(false)
   const [note, setNote] = useState('')
-  const [showHistory, setShowHistory] = useState(false)
 
-  async function handleAddMood() {
-    if (!selectedMood) return
-    await onAddMood(selectedMood, note)
-    setSelectedMood(null)
+  async function pickMood(mood: MoodType) {
+    const opt = MOOD_OPTIONS.find((m) => m.type === mood)
+    if (!opt) return
+    await onAddMood(mood, note.trim() || undefined)
+    onMoodRecorded?.(mood, opt.label, opt.emoji, note.trim() || undefined)
     setNote('')
+    setPickerOpen(false)
   }
 
-  const today = new Date().toISOString().split('T')[0]
-  const todayMood = moodHistory.find(m => m.date === today)
+  if (todayMood && !pickerOpen) {
+    const opt = MOOD_OPTIONS.find((m) => m.type === todayMood.mood)
+    return (
+      <button
+        type='button'
+        className='mood-inline mood-inline--filled'
+        onClick={() => setPickerOpen(true)}
+        title='点击换一个心情'
+      >
+        <span className='mood-inline-emoji'>{opt?.emoji}</span>
+        <span className='mood-inline-label'>{opt?.label}</span>
+        {todayMood.note ? <span className='mood-inline-note'>· {todayMood.note}</span> : null}
+      </button>
+    )
+  }
+
+  if (!pickerOpen) {
+    return (
+      <button
+        type='button'
+        className='mood-inline mood-inline--empty'
+        onClick={() => setPickerOpen(true)}
+      >
+        <span className='mood-inline-emoji'>＋</span>
+        <span className='mood-inline-label'>记一下心情</span>
+      </button>
+    )
+  }
 
   return (
-    <section className="panel-card">
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">Mood Tracker</p>
-          <h3>心情追踪</h3>
-        </div>
-        <button 
-          className="ghost-button" 
-          onClick={() => setShowHistory(!showHistory)}
-          type="button"
-        >
-          {showHistory ? '隐藏历史' : '查看历史'}
-        </button>
+    <div className='mood-inline-picker'>
+      <div className='mood-inline-chips'>
+        {MOOD_OPTIONS.map((opt) => (
+          <button
+            key={opt.type}
+            type='button'
+            className='mood-inline-chip'
+            onClick={() => void pickMood(opt.type)}
+            title={opt.label}
+          >
+            <span className='mood-inline-chip-emoji'>{opt.emoji}</span>
+            <span className='mood-inline-chip-label'>{opt.label}</span>
+          </button>
+        ))}
       </div>
-
-      {todayMood ? (
-        <div className="today-mood">
-          <p>今日心情：{MOOD_OPTIONS.find(m => m.type === todayMood.mood)?.emoji} {MOOD_OPTIONS.find(m => m.type === todayMood.mood)?.label}</p>
-          {todayMood.note && <p className="mood-note">{todayMood.note}</p>}
-        </div>
-      ) : (
-        <>
-          <div className="mood-grid">
-            {MOOD_OPTIONS.map(mood => (
-              <button
-                key={mood.type}
-                className={`mood-button ${selectedMood === mood.type ? 'selected' : ''}`}
-                onClick={() => setSelectedMood(mood.type)}
-                type="button"
-              >
-                <span className="mood-emoji">{mood.emoji}</span>
-                <span className="mood-label">{mood.label}</span>
-              </button>
-            ))}
-          </div>
-
-          {selectedMood && (
-            <div className="mood-form">
-              <label className="field">
-                <span>备注（可选）</span>
-                <input
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder="记录一下今天的心情..."
-                />
-              </label>
-              <button className="primary-button" onClick={handleAddMood} type="button">
-                记录心情
-              </button>
-            </div>
-          )}
-        </>
-      )}
-
-      {showHistory && moodHistory.length > 0 && (
-        <div className="mood-history">
-          <p className="eyebrow">最近心情</p>
-          {moodHistory.slice(-7).reverse().map(entry => (
-            <div key={entry.id} className="mood-entry">
-              <span className="mood-date">{entry.date}</span>
-              <span className="mood-emoji">{MOOD_OPTIONS.find(m => m.type === entry.mood)?.emoji}</span>
-              {entry.note && <span className="mood-note">{entry.note}</span>}
-            </div>
-          ))}
-        </div>
-      )}
-    </section>
+      <input
+        className='mood-inline-note-input'
+        type='text'
+        placeholder='给心情加一句话（可选）'
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+      />
+      <button
+        type='button'
+        className='mood-inline-cancel'
+        onClick={() => {
+          setPickerOpen(false)
+          setNote('')
+        }}
+      >
+        取消
+      </button>
+    </div>
   )
 }

@@ -1,0 +1,251 @@
+/* =========================================================================
+   SciPaper Todo — Base layer
+   Reset, typography, body chrome, focus ring, scrollbar, selection.
+   Depends on tokens.css.
+   ========================================================================= */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+html {
+  color: var(--c-ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: var(--lh-body);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--c-bg);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--c-ink);
+  background:
+    var(--bg-decor),
+    var(--grid-overlay),
+    var(--c-bg);
+  background-attachment: fixed;
+}
+
+/* ---------- Headings ---------- */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  color: var(--c-ink);
+  font-family: var(--font-heading);
+  font-weight: var(--fw-semi);
+  line-height: var(--lh-tight);
+  letter-spacing: var(--letter-heading);
+  text-transform: var(--tt-heading);
+}
+
+h1 { font-size: var(--fs-3xl); }
+h2 { font-size: var(--fs-2xl); }
+h3 { font-size: var(--fs-xl); }
+h4 { font-size: var(--fs-lg); }
+
+/* ---------- Body text ---------- */
+p, ul, ol, dl {
+  margin: 0;
+}
+
+p {
+  color: var(--c-ink);
+}
+
+a {
+  color: var(--c-accent-strong);
+  text-decoration-color: color-mix(in srgb, var(--c-accent) 35%, transparent);
+  text-underline-offset: 3px;
+  transition: color var(--t-fast);
+}
+
+a:hover {
+  color: var(--c-accent);
+}
+
+strong, b {
+  font-weight: var(--fw-semi);
+}
+
+code, kbd, samp, pre {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+/* ---------- Form elements inherit type ---------- */
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+
+img,
+svg,
+video {
+  display: block;
+  max-width: 100%;
+}
+
+/* ---------- Focus ring (accessibility) ----------
+   Visible only on keyboard focus. Themes can re-tint via --c-accent. */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--c-accent);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+[data-theme="pixel"] :focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 3px;
+  box-shadow: 4px 4px 0 #000;
+}
+
+/* ---------- Selection ---------- */
+::selection {
+  background: var(--c-accent-soft);
+  color: var(--c-ink);
+}
+
+[data-theme="pixel"] ::selection {
+  background: #000;
+  color: #FFF;
+}
+
+/* ---------- Scrollbar ----------
+   WebKit: thin, themed track + thumb. Firefox: scrollbar-color. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-line-strong) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--c-ink) 18%, transparent);
+  border-radius: var(--r-pill);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--c-ink) 32%, transparent);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+[data-theme="pixel"] ::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+[data-theme="pixel"] ::-webkit-scrollbar-track {
+  background: #FFF;
+  border-left: 2px solid #000;
+}
+
+[data-theme="pixel"] ::-webkit-scrollbar-thumb {
+  background: #000;
+  border: 2px solid #000;
+  border-radius: 0;
+}
+
+/* ---------- Disabled state (global) ---------- */
+:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------- Utility helpers used across components ---------- */
+.eyebrow {
+  font-family: var(--font-body);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semi);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--c-accent-strong);
+  margin: 0 0 var(--sp-2);
+}
+
+[data-theme="pixel"] .eyebrow {
+  color: var(--c-ink);
+  letter-spacing: 0.22em;
+}
+
+.muted-text,
+.form-tip {
+  color: var(--c-ink-muted);
+  font-size: var(--fs-sm);
+}
+
+.empty-text {
+  color: var(--c-ink-muted);
+  text-align: center;
+  padding: var(--sp-5);
+  font-size: var(--fs-sm);
+}
+
+.full-width {
+  width: 100%;
+  justify-content: center;
+}
+
+.compact {
+  /* used on .field.compact — tighter label */
+}
+
+.plain-list {
+  display: grid;
+  gap: var(--sp-2);
+  list-style: none;
+  padding: 0;
+  color: var(--c-ink-muted);
+}
+
+.plain-list p {
+  margin: 0;
+  color: inherit;
+}

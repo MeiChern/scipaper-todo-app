@@ -712,3 +712,39 @@ JSON
 必须包含完整的错误处理和日志记录（使用Microsoft.Extensions.Logging）
 UI文本支持中英文（使用x:Uid资源）
 提供简单的Setup指南（如何安装和配置MCP）
+
+## 2026-05-01：进度条目层 + 文件导入 + MCP 工具补全
+
+### 数据模型新增（src/types.ts + electron/storage.cjs）
+- `ProgressEntry`：科研进展条目，比 Section 细、比单次编辑明确。kind ∈ read/experiment/writing/idea/cite/analysis。必须挂 articleId，可选 sectionId/findingId/citationId/minutesSpent。
+- `Finding`：Section.findings[]，主要用于 Results。是 Result 的子结论，可挂 ProgressEntry。status ∈ planned/inProgress/done。
+- `DailySession`：date 主键。planText / summaryText / startedAt / endedAt / progressEntryIds[]。
+
+readDatabase 兼容老库：sections.findings、progressEntries、dailySessions 都有 normalize fallback，缺失即空数组。
+
+### MCP 工具新增（electron/llmTools.cjs + electron/toolRouter.cjs）
+**查询类**：
+- `find_article(query, status?, limit?)`：按标题/期刊模糊查找。任何写入前都应该先用它定位 articleId，不再凭对话猜文章名。
+- `list_sections(articleId)`：返回各章节字数、块数、首句，比 get_article 轻得多。
+- `get_section_summary(articleId, sectionType)`：单章节摘要 + 首末段截断。
+
+**写入类**：
+- `attach_file(articleId, sectionType, sourcePath, kind, description?)`：把本地绝对路径文件复制到 Attachments 并写一个 Image 或 FileLink 块。补上了之前 MCP 不能导入文件的空白。
+- `add_progress_entry / list_progress_entries / update_progress_entry / delete_progress_entry / link_progress_to_finding`
+- `add_finding / list_findings / update_finding / delete_finding`
+- `start_daily_session / set_daily_plan / end_daily_session / get_daily_session`
+
+`list_articles` 描述也改写了：去掉"返回范围较大、只在确实需要时使用"那行劝退话术，改为"任何写入或建议前先调用此工具确认 articleId"。这条原话术是模型不报论文名而直接猜的根因。
+
+### UI 新增
+- `HomeView`：第 4 个"今天开干"按钮，弹出 plan 输入弹窗（placeholder 从 28 条池里随机），可写可跳过。
+- `DailyLogView`（新页面，sidebar 加 Daily Log 入口）：今日 plan + 快记入口（articleId / kind / title / detail）+ 时间线条目 + 收尾总结。
+- `SectionEditor`：当 section.type === 'Results' 时顶部多一个 Findings 面板（增删改、状态切换）。
+- `ShareCard`：版面改为"今日 N 项进展"为主，按 kind 分组列出条目（read/experiment/writing/idea/cite/analysis），字数降为其中一行。三个主题（claude/pixel/fresh）都跑通。
+
+### 内置场景新增（electron/writingScenarios.cjs）
+- `builtin-lab-log`：用户一句话描述今天做的事，AI 自动调 list_articles + add_progress_entry 写入。
+- `builtin-daily-summary`：基于今日 ProgressEntry + 字数 + plan 起草一段收尾总结。
+
+### 已知遗留
+- `ItalicGuidePanel.tsx:39` 和 `global.d.ts:1` 仍有 pre-existing lint 错误（非本次引入），需要单独修。

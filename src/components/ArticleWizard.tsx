@@ -63,8 +63,8 @@ export function ArticleWizard({ open, busy, onClose, onSubmit }: ArticleWizardPr
   }
 
   return createPortal(
-    <div className="modal-backdrop" role="presentation">
-      <div className="modal-card">
+    <div className="modal-overlay" role="presentation">
+      <div className="modal-dialog">
         <div className="modal-header">
           <div>
             <p className="eyebrow">开始你的新研究</p>

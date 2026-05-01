@@ -1,4 +1,4 @@
-import type { AppState, ArticleStatus, BlockPreview, CreateArticlePayload, CreateThesisPayload, McpInfo, MoodType, SectionType, ThemeType, UpdateThesisPayload, WritingStats, WritingStreak, TagColor } from './types'
+import type { AppState, ArticleStatus, BlockPreview, CreateArticlePayload, CreateThesisPayload, LlmProviderKind, LlmProvidersState, LlmStreamEvent, LlmTestResult, McpInfo, MoodType, SectionType, ThemeType, UpdateThesisPayload, WritingStats, WritingStreak, TagColor, WritingScenario, ItalicGuide, ZoteroConfig, ProgressEntry, ProgressEntryKind, Finding, FindingStatus, DailySession } from './types'
 import type { BibTeXEntry } from './utils/bibtexParser'
 
 declare global {
@@ -72,6 +72,11 @@ declare global {
         },
       ) => Promise<AppState>
       exportMarkdown: (articleId: string) => Promise<string>
+      exportArticleDocx: (
+        articleId: string,
+        templateId: string,
+        applyItalicGuide?: boolean,
+      ) => Promise<string>
       getWritingGuidance: (articleId: string, targetSection: SectionType) => Promise<string[]>
       copyText: (text: string) => void
       onStateChanged: (listener: () => void) => () => void
@@ -111,6 +116,117 @@ declare global {
       exportToHTML: (articleId: string) => Promise<string>
       exportToJSON: (articleId: string) => Promise<string>
       createSharePackage: (articleId: string) => Promise<string>
+
+      // LLM provider management
+      llmListProviders: () => Promise<LlmProvidersState>
+      llmAddProvider: (draft: {
+        name: string
+        kind: LlmProviderKind
+        baseUrl: string
+        model: string
+        temperature?: number
+        maxTokens?: number
+        supportsToolUse: boolean
+        trustForWrite?: boolean
+        apiKey: string
+        presetId?: string
+      }) => Promise<LlmProvidersState>
+      llmUpdateProvider: (
+        id: string,
+        patch: {
+          name?: string
+          kind?: LlmProviderKind
+          baseUrl?: string
+          model?: string
+          temperature?: number
+          maxTokens?: number
+          supportsToolUse?: boolean
+          trustForWrite?: boolean
+          apiKey?: string
+        },
+      ) => Promise<LlmProvidersState>
+      llmDeleteProvider: (id: string) => Promise<LlmProvidersState>
+      llmSetActiveProvider: (id: string) => Promise<LlmProvidersState>
+      llmTestProvider: (id: string) => Promise<LlmTestResult>
+
+      // LLM chat
+      llmStartChat: (params: {
+        sessionId: string
+        userMessage: string
+        history: { role: 'user' | 'assistant'; content: string }[]
+        currentArticle: {
+          id: string
+          title: string
+          targetJournal: string
+          status: string
+          researchContext: {
+            scientificQuestion: string
+            observedPhenomenon: string
+            hypothesis: string
+            approach: string
+          }
+        } | null
+        currentSection: { type: string; contentExcerpt: string } | null
+        scenarioId?: string
+      }) => Promise<{ ok: boolean; error?: string }>
+      llmCancelSession: (sessionId: string) => Promise<void>
+      llmApprove: (sessionId: string, callId: string, approved: boolean, alwaysAllow: boolean) => Promise<void>
+      llmOnEvent: (listener: (event: LlmStreamEvent) => void) => () => void
+
+      // Writing scenarios
+      listScenarios: () => Promise<WritingScenario[]>
+      addScenario: (draft: Omit<WritingScenario, 'id' | 'builtin'>) => Promise<WritingScenario>
+      updateScenario: (id: string, patch: Partial<Omit<WritingScenario, 'id' | 'builtin'>>) => Promise<WritingScenario>
+      deleteScenario: (id: string) => Promise<void>
+      resetScenarioToDefault: (id: string) => Promise<WritingScenario>
+
+      // Italic guide
+      getItalicGuide: () => Promise<ItalicGuide>
+      setItalicGuide: (config: ItalicGuide) => Promise<ItalicGuide>
+
+      // Zotero
+      getZoteroConfig: () => Promise<ZoteroConfig>
+      setZoteroConfig: (config: ZoteroConfig) => Promise<ZoteroConfig>
+
+      // Progress entries / Findings / Daily session
+      addProgressEntry: (payload: {
+        articleId: string
+        kind: ProgressEntryKind
+        title: string
+        detail?: string
+        sectionId?: string
+        findingId?: string
+        citationId?: string
+        minutesSpent?: number
+        date?: string
+      }) => Promise<AppState>
+      updateProgressEntry: (entryId: string, patch: Partial<Omit<ProgressEntry, 'id' | 'createdAt' | 'createdBy'>>) => Promise<AppState>
+      deleteProgressEntry: (entryId: string) => Promise<AppState>
+      listProgressEntries: (filter?: {
+        articleId?: string
+        date?: string
+        dateFrom?: string
+        dateTo?: string
+        kind?: ProgressEntryKind
+        findingId?: string
+      }) => Promise<ProgressEntry[]>
+      linkProgressToFinding: (entryId: string, findingId: string) => Promise<AppState>
+      addFinding: (
+        articleId: string,
+        sectionType: SectionType,
+        payload: { title: string; description?: string; status?: FindingStatus },
+      ) => Promise<AppState>
+      updateFinding: (
+        articleId: string,
+        findingId: string,
+        patch: { title?: string; description?: string; status?: FindingStatus },
+      ) => Promise<AppState>
+      deleteFinding: (articleId: string, findingId: string) => Promise<AppState>
+      listFindings: (articleId: string, sectionType?: SectionType) => Promise<Finding[]>
+      startDailySession: (date?: string, planText?: string) => Promise<AppState>
+      setDailyPlan: (date: string | undefined, planText: string) => Promise<AppState>
+      endDailySession: (date?: string, summaryText?: string) => Promise<AppState>
+      getDailySession: (date?: string) => Promise<DailySession | null>
     }
   }
 }

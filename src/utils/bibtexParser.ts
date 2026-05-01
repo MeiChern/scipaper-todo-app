@@ -55,28 +55,6 @@ export function parseBibTeX(bibtex: string): BibTeXEntry[] {
   return entries
 }
 
-export function formatBibTeXEntry(entry: BibTeXEntry): string {
-  const fields: string[] = []
-  
-  if (entry.title) fields.push(`  title = {${entry.title}}`)
-  if (entry.authors) fields.push(`  author = {${entry.authors}}`)
-  if (entry.year) fields.push(`  year = {${entry.year}}`)
-  if (entry.journal) fields.push(`  journal = {${entry.journal}}`)
-  if (entry.volume) fields.push(`  volume = {${entry.volume}}`)
-  if (entry.number) fields.push(`  number = {${entry.number}}`)
-  if (entry.pages) fields.push(`  pages = {${entry.pages}}`)
-  if (entry.publisher) fields.push(`  publisher = {${entry.publisher}}`)
-  if (entry.doi) fields.push(`  doi = {${entry.doi}}`)
-  if (entry.url) fields.push(`  url = {${entry.url}}`)
-  
-  return `@${entry.type}{${entry.key},\n${fields.join(',\n')}\n}`
-}
-
-export function extractDoi(doi: string): string {
-  // Remove URL prefix if present
-  return doi.replace(/^https?:\/\/doi\.org\//, '')
-}
-
 export function formatAuthors(authors: string): string {
   // Split by 'and' and format
   const authorList = authors.split(/\s+and\s+/)

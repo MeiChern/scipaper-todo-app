@@ -65,73 +65,46 @@ export function calculateStreak(
   return { currentStreak, longestStreak, totalWritingDays }
 }
 
-export function updateStreakHistory(
-  streak: WritingStreak,
-  todayWords: number,
-  dailyGoal: number
-): WritingStreak {
-  const today = new Date().toISOString().split('T')[0]
-  
-  // Find or create today's entry
-  const history = [...streak.streakHistory]
-  const todayIndex = history.findIndex(h => h.date === today)
-  
-  if (todayIndex >= 0) {
-    history[todayIndex] = {
-      date: today,
-      words: todayWords,
-      goalMet: todayWords >= dailyGoal
-    }
-  } else {
-    history.push({
-      date: today,
-      words: todayWords,
-      goalMet: todayWords >= dailyGoal
-    })
-  }
-  
-  // Keep only last 365 days
-  const oneYearAgo = new Date(Date.now() - 365 * 86400000).toISOString().split('T')[0]
-  const filteredHistory = history.filter(h => h.date >= oneYearAgo)
-  
-  const { currentStreak, longestStreak, totalWritingDays } = calculateStreak(
-    filteredHistory,
-    dailyGoal
-  )
-  
-  return {
-    currentStreak,
-    longestStreak,
-    totalWritingDays,
-    todayWords,
-    dailyGoal,
-    lastWriteDate: today,
-    streakHistory: filteredHistory,
-    moodHistory: []
-  }
-}
-
 export function getHeatmapData(
   streakHistory: WritingStreak['streakHistory'],
   days: number = 28
 ): { date: string; words: number; level: number }[] {
-  const result = []
   const today = new Date()
-  
+  const window: { date: string; words: number }[] = []
+
   for (let i = days - 1; i >= 0; i--) {
     const date = new Date(today.getTime() - i * 86400000)
     const dateStr = date.toISOString().split('T')[0]
     const entry = streakHistory.find(h => h.date === dateStr)
-    
-    const words = entry?.words || 0
+    window.push({ date: dateStr, words: entry?.words || 0 })
+  }
+
+  const nonZero = window.map(d => d.words).filter(w => w > 0).sort((a, b) => a - b)
+
+  function quantile(arr: number[], q: number) {
+    if (arr.length === 0) return 0
+    const pos = (arr.length - 1) * q
+    const base = Math.floor(pos)
+    const rest = pos - base
+    if (base + 1 < arr.length) {
+      return arr[base] + rest * (arr[base + 1] - arr[base])
+    }
+    return arr[base]
+  }
+
+  // Need at least 4 active days for percentile-based bucketing; otherwise
+  // fall back to fixed thresholds so a single high-output day stands out.
+  const usePercentile = nonZero.length >= 4
+  const t1 = usePercentile ? quantile(nonZero, 0.25) : 1
+  const t2 = usePercentile ? quantile(nonZero, 0.5) : 500
+  const t3 = usePercentile ? quantile(nonZero, 0.75) : 1500
+
+  return window.map(({ date, words }) => {
     let level = 0
     if (words > 0) level = 1
-    if (words > 500) level = 2
-    if (words > 1000) level = 3
-    if (words > 2000) level = 4
-    
-    result.push({ date: dateStr, words, level })
-  }
-  
-  return result
+    if (words > t1) level = 2
+    if (words > t2) level = 3
+    if (words > t3) level = 4
+    return { date, words, level }
+  })
 }

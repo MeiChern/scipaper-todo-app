@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import UTIF from 'utif'
 import { DiffViewer } from './DiffViewer'
-import type { Article, BlockPreview, ContentBlock, Section } from '../types'
+import type { Article, BlockPreview, ContentBlock, Section, Finding, FindingStatus } from '../types'
 
 interface SectionEditorProps {
   article: Article
@@ -13,6 +13,106 @@ interface SectionEditorProps {
   onAddImage: () => Promise<void>
   onAddFile: () => Promise<void>
   onOpenAsset: (blockId: string) => Promise<void>
+  onAddFinding?: (title: string) => Promise<void>
+  onUpdateFinding?: (findingId: string, patch: { title?: string; status?: FindingStatus }) => Promise<void>
+  onDeleteFinding?: (findingId: string) => Promise<void>
+}
+
+const FINDING_STATUS_LABEL: Record<FindingStatus, string> = {
+  planned: '待办',
+  inProgress: '进行中',
+  done: '已完成',
+}
+
+function FindingsPanel({
+  findings,
+  onAdd,
+  onUpdate,
+  onDelete,
+}: {
+  findings: Finding[]
+  onAdd: (title: string) => Promise<void>
+  onUpdate: (findingId: string, patch: { title?: string; status?: FindingStatus }) => Promise<void>
+  onDelete: (findingId: string) => Promise<void>
+}) {
+  const [draft, setDraft] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  async function handleAdd() {
+    const title = draft.trim()
+    if (!title || submitting) return
+    setSubmitting(true)
+    try {
+      await onAdd(title)
+      setDraft('')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div className='findings-panel'>
+      <div className='findings-panel-header'>
+        <h3 className='findings-panel-title'>结果小点 (Findings)</h3>
+        <span className='findings-panel-count'>{findings.length}</span>
+      </div>
+      <p className='findings-panel-hint'>
+        把 Result 拆成可挂的小点：实验、阅读、分析这些进展条目都可以挂到下面。
+      </p>
+      <ul className='findings-list'>
+        {findings.map((finding) => (
+          <li key={finding.id} className={`finding-item finding-${finding.status}`}>
+            <select
+              value={finding.status}
+              onChange={(e) => void onUpdate(finding.id, { status: e.target.value as FindingStatus })}
+              className='finding-status-select'
+            >
+              {(Object.keys(FINDING_STATUS_LABEL) as FindingStatus[]).map((s) => (
+                <option key={s} value={s}>
+                  {FINDING_STATUS_LABEL[s]}
+                </option>
+              ))}
+            </select>
+            <span className='finding-title'>{finding.title}</span>
+            <button
+              type='button'
+              className='finding-delete'
+              aria-label='删除小点'
+              onClick={() => void onDelete(finding.id)}
+            >
+              ×
+            </button>
+          </li>
+        ))}
+        {findings.length === 0 ? (
+          <li className='finding-empty'>还没有 finding。在下面输入框写一条。</li>
+        ) : null}
+      </ul>
+      <div className='findings-add'>
+        <input
+          type='text'
+          className='findings-add-input'
+          placeholder='例如：Sf9 piRNA 在病毒侵染时上调'
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              void handleAdd()
+            }
+          }}
+        />
+        <button
+          type='button'
+          className='ghost-button'
+          onClick={() => void handleAdd()}
+          disabled={!draft.trim() || submitting}
+        >
+          + 加 finding
+        </button>
+      </div>
+    </div>
+  )
 }
 
 function formatFileSize(size?: number | null) {
@@ -116,8 +216,8 @@ function TextBlockModal({
   }, [])
 
   return createPortal(
-    <div className="modal-backdrop" role="presentation">
-      <div className="modal-card wide-modal">
+    <div className="modal-overlay" role="presentation">
+      <div className="modal-dialog modal-dialog--wide">
         <div className="modal-header">
           <div>
             <p className="eyebrow">文本块</p>
@@ -238,8 +338,8 @@ function AssetPreviewModal({
   const pdfViewerUrl = pdfBlobUrl ? `${pdfBlobUrl}#page=1&view=FitH` : null
 
   return createPortal(
-    <div className="modal-backdrop" ref={backdropRef} role="presentation">
-      <div className="modal-card wide-modal preview-modal" ref={modalRef}>
+    <div className="modal-overlay" ref={backdropRef} role="presentation">
+      <div className="modal-dialog modal-dialog--wide preview-modal" ref={modalRef}>
         <div className="modal-header">
           <div>
             <p className="eyebrow">附件预览</p>
@@ -311,6 +411,9 @@ export function SectionEditor({
   onAddImage,
   onAddFile,
   onOpenAsset,
+  onAddFinding,
+  onUpdateFinding,
+  onDeleteFinding,
 }: SectionEditorProps) {
   const [newText, setNewText] = useState('')
   const [newDescription, setNewDescription] = useState('')
@@ -351,8 +454,19 @@ export function SectionEditor({
     }
   }
 
+  const showFindings = section.type === 'Results' && onAddFinding && onUpdateFinding && onDeleteFinding
+
   return (
     <div className="panel-stack">
+      {showFindings ? (
+        <FindingsPanel
+          findings={section.findings || []}
+          onAdd={onAddFinding}
+          onUpdate={onUpdateFinding}
+          onDelete={onDeleteFinding}
+        />
+      ) : null}
+
       {expandedTextBlock ? (
         <TextBlockModal
           block={expandedTextBlock}

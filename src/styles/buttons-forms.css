@@ -1,0 +1,292 @@
+/* =========================================================================
+   Buttons + Forms.
+   Classes: primary-button, ghost-button, field, field.compact,
+            block-textarea, large-textarea, checkbox-row,
+            color-picker, color-options, color-option
+   ========================================================================= */
+
+/* ---------- Buttons (shared base) ---------- */
+.primary-button,
+.ghost-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  padding: 10px 18px;
+  border-radius: var(--r-button);
+  border: 1px solid transparent;
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition:
+    background var(--t-fast),
+    color var(--t-fast),
+    border-color var(--t-fast),
+    transform var(--t-fast),
+    box-shadow var(--t-fast);
+}
+
+.primary-button {
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.primary-button:hover:not(:disabled) {
+  background: var(--c-accent-strong);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.primary-button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+.ghost-button {
+  background: transparent;
+  color: var(--c-ink);
+  border-color: var(--c-line-strong);
+}
+
+.ghost-button:hover:not(:disabled) {
+  background: var(--c-panel-sub);
+  border-color: var(--c-ink-muted);
+}
+
+/* Pixel theme: hard offset shadow + uppercase */
+[data-theme="pixel"] .primary-button,
+[data-theme="pixel"] .ghost-button {
+  border: 2px solid #000;
+  border-radius: 0;
+  box-shadow: 3px 3px 0 #000;
+  font-weight: var(--fw-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 9px 16px;
+}
+
+[data-theme="pixel"] .primary-button {
+  background: #000;
+  color: #FFF;
+}
+
+[data-theme="pixel"] .ghost-button {
+  background: #FFF;
+  color: #000;
+}
+
+[data-theme="pixel"] .primary-button:hover:not(:disabled),
+[data-theme="pixel"] .ghost-button:hover:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0 #000;
+  background: #000;
+  color: #FFF;
+}
+
+[data-theme="pixel"] .ghost-button:hover:not(:disabled) {
+  background: #FFF;
+  color: #000;
+}
+
+[data-theme="pixel"] .primary-button:active:not(:disabled),
+[data-theme="pixel"] .ghost-button:active:not(:disabled) {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 #000;
+}
+
+.full-width {
+  width: 100%;
+}
+
+/* ---------- Field (label wrapper) ---------- */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field > span {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--c-ink-muted);
+}
+
+[data-theme="pixel"] .field > span {
+  color: #000;
+  font-weight: var(--fw-bold);
+}
+
+.field input,
+.field textarea,
+.field select {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--c-panel);
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--r-input);
+  color: var(--c-ink);
+  font-family: var(--font-body);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  transition:
+    border-color var(--t-fast),
+    box-shadow var(--t-fast),
+    background var(--t-fast);
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--c-ink-faint);
+}
+
+.field input:hover,
+.field textarea:hover,
+.field select:hover {
+  border-color: var(--c-ink-muted);
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  outline: none;
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 3px var(--c-accent-soft);
+  background: var(--c-panel);
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.field.compact > span {
+  font-size: 10.5px;
+}
+
+[data-theme="pixel"] .field input,
+[data-theme="pixel"] .field textarea,
+[data-theme="pixel"] .field select {
+  border: 2px solid #000;
+  border-radius: 0;
+  background: #FFF;
+}
+
+[data-theme="pixel"] .field input:focus,
+[data-theme="pixel"] .field textarea:focus,
+[data-theme="pixel"] .field select:focus {
+  box-shadow: 3px 3px 0 #000;
+  border-color: #000;
+}
+
+/* ---------- Special textareas ---------- */
+.block-textarea {
+  width: 100%;
+  min-height: 160px;
+  padding: var(--sp-3);
+  background: var(--c-panel);
+  border: 1px solid var(--c-line-strong);
+  border-radius: var(--r-input);
+  color: var(--c-ink);
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  line-height: var(--lh-body);
+  resize: vertical;
+}
+
+.block-textarea:focus {
+  outline: none;
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 3px var(--c-accent-soft);
+}
+
+[data-theme="pixel"] .block-textarea {
+  border: 2px solid #000;
+  border-radius: 0;
+}
+
+[data-theme="pixel"] .block-textarea:focus {
+  box-shadow: 3px 3px 0 #000;
+}
+
+.large-textarea {
+  min-height: 420px;
+}
+
+/* ---------- Checkbox row ---------- */
+.checkbox-row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--c-ink-muted);
+  font-size: var(--fs-sm);
+}
+
+.checkbox-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--c-accent);
+}
+
+[data-theme="pixel"] .checkbox-row input[type="checkbox"] {
+  accent-color: #000;
+}
+
+/* ---------- Color picker (Tag form) ---------- */
+.color-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.color-picker > span {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--c-ink-muted);
+}
+
+.color-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.color-option {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform var(--t-fast), box-shadow var(--t-fast);
+}
+
+.color-option:hover {
+  transform: scale(1.08);
+  box-shadow: var(--shadow-sm);
+}
+
+.color-option.selected {
+  border-color: var(--c-ink);
+  box-shadow: 0 0 0 2px var(--c-panel), 0 0 0 4px var(--c-ink);
+}
+
+[data-theme="pixel"] .color-option {
+  border-radius: 0;
+  border-width: 2px;
+  border-color: #000;
+  /* convert color swatch to grayscale for pixel theme */
+  filter: grayscale(1) contrast(1.1);
+}
+
+[data-theme="pixel"] .color-option.selected {
+  box-shadow: 3px 3px 0 #000;
+  transform: translate(-1px, -1px);
+}

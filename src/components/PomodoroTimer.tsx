@@ -4,150 +4,134 @@ import type { PomodoroStats } from '../types'
 interface PomodoroTimerProps {
   stats: PomodoroStats
   onAddSession: (duration: number) => Promise<void>
+  /**
+   * Called when a focus session naturally completes (not on manual stop).
+   * Used to write a ProgressEntry kind='focus'.
+   */
+  onSessionFinished?: (durationMinutes: number) => void
+  autoStart?: boolean
 }
 
-const PRESET_DURATIONS = [15, 25, 30, 45, 60]
+const PRESET_DURATIONS = [15, 25, 45]
 
-export function PomodoroTimer({ stats, onAddSession }: PomodoroTimerProps) {
+function formatMMSS(seconds: number) {
+  const m = Math.floor(seconds / 60)
+  const s = seconds % 60
+  return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+}
+
+export function PomodoroTimer({
+  stats,
+  onAddSession,
+  onSessionFinished,
+  autoStart,
+}: PomodoroTimerProps) {
   const [duration, setDuration] = useState(25)
-  const [timeLeft, setTimeLeft] = useState(25 * 60)
-  const [isRunning, setIsRunning] = useState(false)
-  const [isPaused, setIsPaused] = useState(false)
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [elapsed, setElapsed] = useState(0)
+  const [phase, setPhase] = useState<'idle' | 'running' | 'paused'>('idle')
+
+  const onAddSessionRef = useRef(onAddSession)
+  const onFinishedRef = useRef(onSessionFinished)
+  const hasAutoStartedRef = useRef(false)
+
+  useEffect(() => { onAddSessionRef.current = onAddSession }, [onAddSession])
+  useEffect(() => { onFinishedRef.current = onSessionFinished }, [onSessionFinished])
 
   useEffect(() => {
-    if (isRunning && !isPaused) {
-      timerRef.current = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current!)
-            setIsRunning(false)
-            onAddSession(duration)
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
+    if (autoStart && !hasAutoStartedRef.current) {
+      hasAutoStartedRef.current = true
+      setElapsed(0)
+      setPhase('running')
     }
+  }, [autoStart])
 
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
-      }
-    }
-  }, [isRunning, isPaused, duration, onAddSession])
+  useEffect(() => {
+    if (phase !== 'running') return
+    const totalSeconds = duration * 60
+    const interval = setInterval(() => {
+      setElapsed((prev) => {
+        const next = prev + 1
+        if (next >= totalSeconds) {
+          clearInterval(interval)
+          setPhase('idle')
+          void onAddSessionRef.current(duration)
+          onFinishedRef.current?.(duration)
+          return 0
+        }
+        return next
+      })
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [phase, duration])
 
-  function startTimer() {
-    setTimeLeft(duration * 60)
-    setIsRunning(true)
-    setIsPaused(false)
+  const isIdle = phase === 'idle'
+  const isPaused = phase === 'paused'
+  const totalSeconds = duration * 60
+  const remaining = isIdle ? totalSeconds : Math.max(0, totalSeconds - elapsed)
+
+  function pickDuration(d: number) {
+    if (!isIdle) return
+    setDuration(d)
+    setElapsed(0)
   }
 
-  function pauseTimer() {
-    setIsPaused(!isPaused)
+  function startTimer() {
+    setElapsed(0)
+    setPhase('running')
+  }
+
+  function togglePause() {
+    setPhase((p) => (p === 'paused' ? 'running' : 'paused'))
   }
 
   function stopTimer() {
-    setIsRunning(false)
-    setIsPaused(false)
-    setTimeLeft(duration * 60)
+    setElapsed(0)
+    setPhase('idle')
   }
-
-  function formatTime(seconds: number) {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }
-
-  const progress = ((duration * 60 - timeLeft) / (duration * 60)) * 100
 
   return (
-    <section className="panel-card">
-      <div className="section-heading">
-        <div>
-          <p className="eyebrow">Pomodoro Timer</p>
-          <h3>番茄钟</h3>
-        </div>
+    <div className={`pomo2 ${!isIdle ? 'is-running' : ''} ${isPaused ? 'is-paused' : ''}`}>
+      <div className='pomo2-segs' role='radiogroup' aria-label='番茄钟时长'>
+        {PRESET_DURATIONS.map((d) => {
+          const selected = d === duration
+          const showLive = !isIdle && selected
+          return (
+            <button
+              key={d}
+              type='button'
+              role='radio'
+              aria-checked={selected}
+              className={`pomo2-seg${selected ? ' is-selected' : ''}${showLive ? ' is-live' : ''}`}
+              onClick={() => pickDuration(d)}
+              disabled={!isIdle && !selected}
+            >
+              <span className='pomo2-seg-time'>
+                {showLive ? formatMMSS(remaining) : `${d}:00`}
+              </span>
+              <span className='pomo2-seg-label'>{d} min</span>
+            </button>
+          )
+        })}
       </div>
 
-      <div className="pomodoro-stats">
-        <div className="pomodoro-stat">
-          <span className="pomodoro-stat-label">今日</span>
-          <span className="pomodoro-stat-value">{stats.todaySessions} 次</span>
+      {isIdle ? (
+        <button className='pomo2-action' type='button' onClick={startTimer}>
+          <span className='pomo2-play' aria-hidden>▶</span>
+          开始
+        </button>
+      ) : (
+        <div className='pomo2-controls'>
+          <button className='pomo2-control' type='button' onClick={togglePause}>
+            <span className='pomo2-play' aria-hidden>{isPaused ? '▶' : '❚❚'}</span>
+            {isPaused ? '继续' : '暂停'}
+          </button>
+          <button className='pomo2-control pomo2-control--stop' type='button' onClick={stopTimer}>
+            停
+          </button>
         </div>
-        <div className="pomodoro-stat">
-          <span className="pomodoro-stat-label">今日时长</span>
-          <span className="pomodoro-stat-value">{stats.todayMinutes} 分钟</span>
-        </div>
-        <div className="pomodoro-stat">
-          <span className="pomodoro-stat-label">总计</span>
-          <span className="pomodoro-stat-value">{stats.totalSessions} 次</span>
-        </div>
-      </div>
+      )}
 
-      <div className="pomodoro-timer">
-        <div className="timer-display">
-          <div className="timer-circle">
-            <svg viewBox="0 0 100 100">
-              <circle
-                className="timer-bg"
-                cx="50"
-                cy="50"
-                r="45"
-                fill="none"
-                stroke="var(--line)"
-                strokeWidth="8"
-              />
-              <circle
-                className="timer-progress"
-                cx="50"
-                cy="50"
-                r="45"
-                fill="none"
-                stroke="var(--accent)"
-                strokeWidth="8"
-                strokeDasharray={`${2 * Math.PI * 45}`}
-                strokeDashoffset={`${2 * Math.PI * 45 * (1 - progress / 100)}`}
-                transform="rotate(-90 50 50)"
-              />
-            </svg>
-            <span className="timer-time">{formatTime(timeLeft)}</span>
-          </div>
-        </div>
-
-        {!isRunning ? (
-          <div className="duration-selector">
-            <p className="eyebrow">选择时长</p>
-            <div className="duration-options">
-              {PRESET_DURATIONS.map(d => (
-                <button
-                  key={d}
-                  className={`duration-button ${duration === d ? 'selected' : ''}`}
-                  onClick={() => {
-                    setDuration(d)
-                    setTimeLeft(d * 60)
-                  }}
-                  type="button"
-                >
-                  {d}分钟
-                </button>
-              ))}
-            </div>
-            <button className="primary-button" onClick={startTimer} type="button">
-              开始专注
-            </button>
-          </div>
-        ) : (
-          <div className="timer-controls">
-            <button className="ghost-button" onClick={pauseTimer} type="button">
-              {isPaused ? '继续' : '暂停'}
-            </button>
-            <button className="ghost-button" onClick={stopTimer} type="button">
-              停止
-            </button>
-          </div>
-        )}
-      </div>
-    </section>
+      <span className='pomo2-tally' title='今日番茄钟'>今 {stats.todaySessions}</span>
+    </div>
   )
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { Article } from '../types'
+import type { Article, Citation } from '../types'
 import { parseBibTeX, formatAuthors, type BibTeXEntry } from '../utils/bibtexParser'
 
 interface CitationManagerProps {
@@ -85,8 +85,8 @@ export function CitationManager({ article, onAddCitation }: CitationManagerProps
 
       <div className="citation-list">
         {article.citations && article.citations.length > 0 ? (
-          article.citations.map((citation: any, index: number) => (
-            <div key={index} className="citation-item">
+          article.citations.map((citation: Citation, index: number) => (
+            <div key={citation.id ?? index} className="citation-item">
               <div className="citation-info">
                 <strong>{citation.title || '未命名'}</strong>
                 <p>{citation.authors || '未知作者'} ({citation.year || '未知年份'})</p>

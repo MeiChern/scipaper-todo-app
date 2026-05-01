@@ -1,0 +1,354 @@
+/* =========================================================================
+   home-themes.css
+   Per-theme decorative overrides for the Home view.
+   Extracted from designer's home-claude.html / home-pixel.html / home-fresh.html
+   <style> blocks, scoped under [data-theme="…"] selectors so all three coexist.
+   ========================================================================= */
+
+/* =========================================================================
+   THEME · CLAUDE — scholarly study, warm coral & cream
+   ========================================================================= */
+[data-theme="claude"] body:has(.home-route) {
+  background:
+    radial-gradient(circle at 8% 0%, rgba(251, 233, 223, 0.6), transparent 38%),
+    radial-gradient(circle at 100% 100%, rgba(217, 119, 87, 0.10), transparent 32%),
+    var(--c-bg);
+}
+
+[data-theme="claude"] .home-hero-title {
+  font-size: 3.4rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+[data-theme="claude"] .home-hero-title em {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--c-accent);
+}
+[data-theme="claude"] .home-hero-rule {
+  height: 1px;
+  background: linear-gradient(90deg, var(--c-accent) 0%, transparent 60%);
+  margin: var(--sp-3) 0 var(--sp-4);
+  opacity: 0.6;
+}
+
+[data-theme="claude"] .home-continue::before {
+  content: "❝";
+  position: absolute;
+  top: -28px;
+  right: 24px;
+  font-family: var(--font-heading);
+  font-size: 220px;
+  line-height: 1;
+  color: var(--c-accent);
+  opacity: 0.07;
+  pointer-events: none;
+}
+
+[data-theme="claude"] .home-action-glyph {
+  background: var(--c-accent-tint);
+  border: 1px solid var(--c-accent-soft);
+}
+
+[data-theme="claude"] .home-aphorism blockquote::first-letter {
+  font-size: 1.6em;
+  font-weight: 600;
+  color: var(--c-accent);
+  margin-right: 0.04em;
+}
+
+[data-theme="claude"] .home-mini-card {
+  background:
+    linear-gradient(180deg, rgba(251, 233, 223, 0.45), transparent 50%),
+    var(--c-panel);
+}
+
+/* =========================================================================
+   THEME · PIXEL — BBS / old blog: monospace, hard 2px borders, ASCII deco
+   ========================================================================= */
+[data-theme="pixel"] body:has(.home-route) {
+  background:
+    repeating-linear-gradient(0deg, transparent 0 23px, rgba(0,0,0,0.05) 23px 24px),
+    repeating-linear-gradient(90deg, transparent 0 23px, rgba(0,0,0,0.05) 23px 24px),
+    #FFFFFF;
+}
+
+[data-theme="pixel"] .home-brand-glyph {
+  border: 2px solid #000;
+  box-shadow: 3px 3px 0 #000;
+}
+
+[data-theme="pixel"] .home-hero-title {
+  font-family: 'IBM Plex Mono', 'JetBrains Mono', Consolas, monospace;
+  font-weight: 700;
+  font-size: 2.6rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1.15;
+}
+[data-theme="pixel"] .home-hero-title em {
+  font-style: normal;
+  background: #000;
+  color: #fff;
+  padding: 0 8px;
+}
+[data-theme="pixel"] .home-hero-rule {
+  height: auto;
+  background: none;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.85rem;
+  color: #000;
+  overflow: hidden;
+  white-space: nowrap;
+  margin: var(--sp-3) 0 var(--sp-4);
+}
+[data-theme="pixel"] .home-hero-rule::before {
+  content: "+--------------------------------------------------------------------------+";
+  letter-spacing: 0;
+}
+[data-theme="pixel"] .home-hero-eyebrow::before { content: "// "; }
+
+[data-theme="pixel"] .home-continue::before {
+  content: '" "';
+  position: absolute;
+  top: 8px;
+  right: 24px;
+  font-family: 'VT323', 'IBM Plex Mono', monospace;
+  font-size: 180px;
+  line-height: 1;
+  color: #000;
+  opacity: 0.06;
+  letter-spacing: -0.1em;
+  pointer-events: none;
+}
+[data-theme="pixel"] .home-continue-eyebrow::before { content: "[ "; }
+[data-theme="pixel"] .home-continue-eyebrow::after { content: " ]"; }
+
+[data-theme="pixel"] .home-action {
+  border-radius: 0 !important;
+}
+[data-theme="pixel"] .home-action-glyph {
+  background: #000 !important;
+  color: #fff !important;
+  border-radius: 0 !important;
+  border: 2px solid #000;
+  font-weight: 700;
+}
+[data-theme="pixel"] .home-action-shortcut {
+  background: #000;
+  color: #fff;
+  padding: 2px 6px;
+  align-self: flex-start;
+}
+
+[data-theme="pixel"] .home-card-cover {
+  background: #000 !important;
+  color: #fff !important;
+  border-radius: 0 !important;
+  border: 2px solid #000;
+  aspect-ratio: 16 / 8;
+  background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.08) 0 6px, transparent 6px 12px);
+}
+[data-theme="pixel"] .home-card-status {
+  border-radius: 0 !important;
+  border: 1.5px solid #000;
+  background: #fff !important;
+  color: #000 !important;
+}
+
+[data-theme="pixel"] .home-stat-num,
+[data-theme="pixel"] .home-mini-card-num {
+  font-family: 'IBM Plex Mono', monospace !important;
+  color: #000 !important;
+}
+[data-theme="pixel"] .home-week-bar {
+  background: #fff !important;
+  border: 2px solid #000 !important;
+  border-radius: 0 !important;
+}
+[data-theme="pixel"] .home-week-bar-fill {
+  background: #000 !important;
+  border-radius: 0 !important;
+}
+
+[data-theme="pixel"] .home-aphorism blockquote {
+  font-family: 'IBM Plex Mono', monospace;
+  font-style: normal;
+  font-weight: 500;
+}
+[data-theme="pixel"] .home-aphorism blockquote::before { content: ">>> "; opacity: 0.4; }
+[data-theme="pixel"] .home-aphorism blockquote::after  { content: " <<<"; opacity: 0.4; }
+[data-theme="pixel"] .home-aphorism blockquote::first-letter { color: #000; font-weight: 700; }
+
+[data-theme="pixel"] .home-h h2::before {
+  content: "## ";
+  color: var(--c-ink-faint);
+}
+
+[data-theme="pixel"] .home-continue-resume {
+  border-radius: 0 !important;
+  border: 2px solid #000 !important;
+  box-shadow: 4px 4px 0 #000 !important;
+}
+[data-theme="pixel"] .home-continue-resume:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 6px 6px 0 #000 !important;
+}
+
+[data-theme="pixel"] .home-mini-card {
+  border-radius: 0 !important;
+  border: 2px solid #000 !important;
+  box-shadow: 3px 3px 0 #000 !important;
+}
+
+/* =========================================================================
+   THEME · FRESH — Notion / Linear modern SaaS, mint accent, airy
+   ========================================================================= */
+[data-theme="fresh"] body:has(.home-route) {
+  background:
+    linear-gradient(180deg, rgba(46, 139, 87, 0.06) 0%, transparent 280px),
+    radial-gradient(circle at 88% 14%, rgba(46, 139, 87, 0.08), transparent 35%),
+    radial-gradient(circle at 6% 100%, rgba(220, 235, 226, 0.6), transparent 40%),
+    var(--c-bg);
+}
+
+[data-theme="fresh"] .home-sidebar {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(20px) saturate(140%);
+  border-right-color: rgba(46, 139, 87, 0.10);
+}
+[data-theme="fresh"] .home-brand-glyph {
+  background: linear-gradient(135deg, #2E8B57 0%, #1F6B41 100%);
+  box-shadow:
+    0 6px 16px rgba(31, 107, 65, 0.30),
+    inset 0 1px 0 rgba(255,255,255,0.25);
+}
+
+[data-theme="fresh"] .home-hero-title {
+  font-family: 'Inter Tight', 'Inter', 'Avenir Next', sans-serif;
+  font-size: 3rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+}
+[data-theme="fresh"] .home-hero-title em {
+  font-family: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--c-accent);
+  letter-spacing: -0.01em;
+  padding: 0 0.05em;
+}
+[data-theme="fresh"] .home-hero-rule {
+  height: 1px;
+  background: linear-gradient(90deg, rgba(46,139,87,0.35) 0%, transparent 50%);
+  margin: var(--sp-3) 0 var(--sp-4);
+}
+
+[data-theme="fresh"] .home-continue {
+  background:
+    linear-gradient(135deg, rgba(46, 139, 87, 0.04) 0%, rgba(255,255,255,0) 50%),
+    var(--c-panel);
+  border-color: rgba(46, 139, 87, 0.16);
+}
+[data-theme="fresh"] .home-continue::before { display: none; }
+[data-theme="fresh"] .home-continue-title {
+  font-family: 'Inter Tight', sans-serif;
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-transform: none;
+}
+[data-theme="fresh"] .home-continue-excerpt {
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  color: var(--c-ink-muted);
+}
+
+[data-theme="fresh"] .home-action {
+  background: linear-gradient(180deg, #FFFFFF 0%, #FAFDFB 100%);
+}
+[data-theme="fresh"] .home-action::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(46,139,87,0.08), transparent 60%);
+  opacity: 0;
+  transition: opacity var(--t-base);
+  pointer-events: none;
+}
+[data-theme="fresh"] .home-action:hover::after { opacity: 1; }
+[data-theme="fresh"] .home-action-glyph {
+  background: linear-gradient(135deg, #DDEEE3 0%, #C9E5D4 100%);
+  color: var(--c-accent-strong);
+  border: 1px solid rgba(46, 139, 87, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+  font-size: 1.4rem;
+}
+[data-theme="fresh"] .home-action-title {
+  font-family: 'Inter Tight', sans-serif;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: -0.01em;
+}
+
+[data-theme="fresh"] .home-h h2 {
+  font-family: 'Inter Tight', sans-serif;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: -0.02em;
+  font-size: 1.5rem;
+}
+
+[data-theme="fresh"] .home-card-cover {
+  background: linear-gradient(135deg, #DDEEE3 0%, #B8DDC6 100%);
+  color: var(--c-accent-strong);
+  border-color: rgba(46, 139, 87, 0.18);
+}
+[data-theme="fresh"] .home-card-title {
+  font-family: 'Inter Tight', sans-serif;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: -0.01em;
+}
+[data-theme="fresh"] .home-card-status {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+}
+
+[data-theme="fresh"] .home-stat-num,
+[data-theme="fresh"] .home-mini-card-num {
+  font-family: 'Inter Tight', sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+[data-theme="fresh"] .home-mini-card {
+  background:
+    radial-gradient(circle at 100% 0%, rgba(46, 139, 87, 0.10), transparent 60%),
+    var(--c-panel);
+}
+
+[data-theme="fresh"] .home-continue-resume {
+  background: linear-gradient(180deg, #2E8B57 0%, #226F45 100%);
+  border-color: #1F6B41;
+  text-transform: none;
+  letter-spacing: -0.01em;
+  font-family: 'Inter Tight', sans-serif;
+  font-weight: 600;
+  box-shadow:
+    0 6px 16px rgba(31, 107, 65, 0.22),
+    inset 0 1px 0 rgba(255,255,255,0.18);
+}
+
+[data-theme="fresh"] .home-aphorism blockquote {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.6rem;
+  letter-spacing: -0.01em;
+}
+[data-theme="fresh"] .home-aphorism blockquote::first-letter {
+  color: var(--c-accent);
+}

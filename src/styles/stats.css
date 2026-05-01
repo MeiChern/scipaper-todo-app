@@ -1,0 +1,323 @@
+/* =========================================================================
+   Stats — WritingStats, StreakBadge, Pomodoro, charts.
+   Classes: stat-grid, stat-tile, stat-value, stat-label, stat-trend,
+            streak-badge, streak-flame, streak-count, streak-label,
+            pomodoro-card, pomodoro-display, pomodoro-time, pomodoro-mode,
+            pomodoro-controls, pomodoro-progress, pomodoro-bar,
+            chart-container, chart-row, chart-bar, chart-bar-fill,
+            heatmap-grid, heatmap-cell, heatmap-legend
+   ========================================================================= */
+
+/* ---------- Stat tiles ---------- */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--sp-3);
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--sp-4);
+  background: var(--c-panel-sub);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+}
+
+.stat-value {
+  font-family: var(--font-display, var(--font-heading));
+  font-size: 2rem;
+  font-weight: var(--fw-bold);
+  color: var(--c-ink);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  font-size: var(--fs-xs);
+  color: var(--c-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: var(--fw-med);
+}
+
+.stat-trend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: var(--fs-xs);
+  font-family: var(--font-mono);
+  color: var(--c-ink-muted);
+}
+
+.stat-trend.up    { color: var(--c-success); }
+.stat-trend.down  { color: var(--c-danger); }
+.stat-trend.flat  { color: var(--c-ink-faint); }
+
+[data-theme="pixel"] .stat-tile {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+  box-shadow: 3px 3px 0 #000;
+}
+
+[data-theme="pixel"] .stat-value {
+  font-family: var(--font-mono);
+  letter-spacing: -0.02em;
+}
+
+/* ---------- Streak badge ---------- */
+.streak-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 8px 14px;
+  background: var(--c-accent-soft);
+  color: var(--c-accent-strong);
+  border: 1px solid var(--c-accent);
+  border-radius: var(--r-pill);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semi);
+}
+
+.streak-flame {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.streak-count {
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.streak-label {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+[data-theme="pixel"] .streak-badge {
+  background: #000;
+  color: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+  box-shadow: 3px 3px 0 #000;
+  text-transform: uppercase;
+}
+
+/* ---------- Pomodoro card ---------- */
+.pomodoro-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-5);
+  background: var(--c-panel);
+  border: var(--bw-card) solid var(--c-line);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-sm);
+}
+
+.pomodoro-mode {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--c-ink-muted);
+}
+
+.pomodoro-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.pomodoro-time {
+  font-family: var(--font-mono);
+  font-size: clamp(3rem, 8vw, 5rem);
+  font-weight: var(--fw-bold);
+  color: var(--c-ink);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.pomodoro-controls {
+  display: flex;
+  gap: var(--sp-2);
+}
+
+.pomodoro-progress {
+  width: 100%;
+  height: 6px;
+  background: var(--c-panel-sub);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+}
+
+.pomodoro-bar {
+  height: 100%;
+  background: var(--c-accent);
+  border-radius: inherit;
+  transition: width var(--t-base) linear;
+}
+
+[data-theme="pixel"] .pomodoro-card {
+  background: #FFF;
+  border: 3px solid #000;
+  border-radius: 0;
+  box-shadow: 6px 6px 0 #000;
+}
+
+[data-theme="pixel"] .pomodoro-time {
+  color: #000;
+}
+
+[data-theme="pixel"] .pomodoro-progress {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+  height: 14px;
+  padding: 0;
+}
+
+[data-theme="pixel"] .pomodoro-bar {
+  background: #000;
+  border-radius: 0;
+  /* Stepped fill — looks more like a load bar */
+  background-image: repeating-linear-gradient(
+    90deg,
+    #000 0,
+    #000 8px,
+    #FFF 8px,
+    #FFF 10px
+  );
+}
+
+/* ---------- Bar chart ---------- */
+.chart-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  background: var(--c-panel-sub);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+}
+
+.chart-row {
+  display: grid;
+  grid-template-columns: 80px 1fr 60px;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.chart-row > span:first-child {
+  font-size: var(--fs-xs);
+  color: var(--c-ink-muted);
+  font-family: var(--font-mono);
+}
+
+.chart-bar {
+  height: 8px;
+  background: var(--c-line);
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  position: relative;
+}
+
+.chart-bar-fill {
+  height: 100%;
+  background: var(--c-accent);
+  border-radius: inherit;
+  transition: width var(--t-base) ease-out;
+}
+
+.chart-row > span:last-child {
+  font-size: var(--fs-xs);
+  font-family: var(--font-mono);
+  color: var(--c-ink);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+[data-theme="pixel"] .chart-container {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+}
+
+[data-theme="pixel"] .chart-bar {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+  height: 14px;
+}
+
+[data-theme="pixel"] .chart-bar-fill {
+  background: #000;
+  border-radius: 0;
+}
+
+/* ---------- Heatmap (contribution-style grid) ---------- */
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14px, 1fr));
+  gap: 3px;
+  padding: var(--sp-3);
+  background: var(--c-panel-sub);
+  border: 1px solid var(--c-line);
+  border-radius: var(--r-md);
+}
+
+.heatmap-cell {
+  aspect-ratio: 1 / 1;
+  background: var(--c-panel);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--c-line);
+}
+
+.heatmap-cell[data-level="0"] { background: var(--c-panel); }
+.heatmap-cell[data-level="1"] { background: color-mix(in srgb, var(--c-accent) 25%, var(--c-panel)); }
+.heatmap-cell[data-level="2"] { background: color-mix(in srgb, var(--c-accent) 50%, var(--c-panel)); }
+.heatmap-cell[data-level="3"] { background: color-mix(in srgb, var(--c-accent) 75%, var(--c-panel)); }
+.heatmap-cell[data-level="4"] { background: var(--c-accent); }
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-2);
+  font-size: var(--fs-xs);
+  font-family: var(--font-mono);
+  color: var(--c-ink-muted);
+}
+
+.heatmap-legend .heatmap-cell {
+  width: 12px;
+  height: 12px;
+  aspect-ratio: auto;
+}
+
+[data-theme="pixel"] .heatmap-grid {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+  gap: 2px;
+}
+
+[data-theme="pixel"] .heatmap-cell {
+  border: 1px solid #000;
+  border-radius: 0;
+}
+
+[data-theme="pixel"] .heatmap-cell[data-level="0"] { background: #FFF; }
+[data-theme="pixel"] .heatmap-cell[data-level="1"] { background: #D9D9D9; }
+[data-theme="pixel"] .heatmap-cell[data-level="2"] { background: #999; }
+[data-theme="pixel"] .heatmap-cell[data-level="3"] { background: #555; }
+[data-theme="pixel"] .heatmap-cell[data-level="4"] { background: #000; }

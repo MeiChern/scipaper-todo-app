@@ -25,6 +25,8 @@ contextBridge.exposeInMainWorld('scipaper', {
   addRevision: (articleId, roundId, commentId, payload) =>
     ipcRenderer.invoke('review:addRevision', { articleId, roundId, commentId, payload }),
   exportMarkdown: (articleId) => ipcRenderer.invoke('article:exportMarkdown', { articleId }),
+  exportArticleDocx: (articleId, templateId, applyItalicGuide) =>
+    ipcRenderer.invoke('article:exportDocx', { articleId, templateId, applyItalicGuide }),
   getWritingGuidance: (articleId, targetSection) =>
     ipcRenderer.invoke('article:getWritingGuidance', { articleId, targetSection }),
   copyText: (text) => clipboard.writeText(text),
@@ -62,4 +64,58 @@ contextBridge.exposeInMainWorld('scipaper', {
   exportToHTML: (articleId) => ipcRenderer.invoke('export:html', { articleId }),
   exportToJSON: (articleId) => ipcRenderer.invoke('export:json', { articleId }),
   createSharePackage: (articleId) => ipcRenderer.invoke('export:share', { articleId }),
+
+  // LLM provider management
+  llmListProviders: () => ipcRenderer.invoke('llm:listProviders'),
+  llmAddProvider: (draft) => ipcRenderer.invoke('llm:addProvider', { draft }),
+  llmUpdateProvider: (id, patch) => ipcRenderer.invoke('llm:updateProvider', { id, patch }),
+  llmDeleteProvider: (id) => ipcRenderer.invoke('llm:deleteProvider', { id }),
+  llmSetActiveProvider: (id) => ipcRenderer.invoke('llm:setActiveProvider', { id }),
+  llmTestProvider: (id) => ipcRenderer.invoke('llm:testProvider', { id }),
+
+  // LLM chat
+  llmStartChat: (params) => ipcRenderer.invoke('llm:startChat', params),
+  llmCancelSession: (sessionId) => ipcRenderer.invoke('llm:cancelSession', { sessionId }),
+  llmApprove: (sessionId, callId, approved, alwaysAllow) =>
+    ipcRenderer.invoke('llm:approve', { sessionId, callId, approved, alwaysAllow }),
+  llmOnEvent: (listener) => {
+    const eventHandler = (_event, payload) => listener({ ...payload, _channel: 'event' })
+    const toolHandler = (_event, payload) => listener({ ...payload, _channel: 'toolEvent' })
+    ipcRenderer.on('llm:event', eventHandler)
+    ipcRenderer.on('llm:toolEvent', toolHandler)
+    return () => {
+      ipcRenderer.removeListener('llm:event', eventHandler)
+      ipcRenderer.removeListener('llm:toolEvent', toolHandler)
+    }
+  },
+
+  // Writing scenarios
+  listScenarios: () => ipcRenderer.invoke('scenario:list'),
+  addScenario: (draft) => ipcRenderer.invoke('scenario:add', { draft }),
+  updateScenario: (id, patch) => ipcRenderer.invoke('scenario:update', { id, patch }),
+  deleteScenario: (id) => ipcRenderer.invoke('scenario:delete', { id }),
+  resetScenarioToDefault: (id) => ipcRenderer.invoke('scenario:reset', { id }),
+
+  // Italic guide
+  getItalicGuide: () => ipcRenderer.invoke('italic:get'),
+  setItalicGuide: (config) => ipcRenderer.invoke('italic:set', { config }),
+
+  // Zotero
+  getZoteroConfig: () => ipcRenderer.invoke('zotero:getConfig'),
+  setZoteroConfig: (config) => ipcRenderer.invoke('zotero:setConfig', { config }),
+
+  // Progress entries / Findings / Daily session
+  addProgressEntry: (payload) => ipcRenderer.invoke('progress:add', { payload }),
+  updateProgressEntry: (entryId, patch) => ipcRenderer.invoke('progress:update', { entryId, patch }),
+  deleteProgressEntry: (entryId) => ipcRenderer.invoke('progress:delete', { entryId }),
+  listProgressEntries: (filter) => ipcRenderer.invoke('progress:list', { filter }),
+  linkProgressToFinding: (entryId, findingId) => ipcRenderer.invoke('progress:link', { entryId, findingId }),
+  addFinding: (articleId, sectionType, payload) => ipcRenderer.invoke('finding:add', { articleId, sectionType, payload }),
+  updateFinding: (articleId, findingId, patch) => ipcRenderer.invoke('finding:update', { articleId, findingId, patch }),
+  deleteFinding: (articleId, findingId) => ipcRenderer.invoke('finding:delete', { articleId, findingId }),
+  listFindings: (articleId, sectionType) => ipcRenderer.invoke('finding:list', { articleId, sectionType }),
+  startDailySession: (date, planText) => ipcRenderer.invoke('daily:start', { date, planText }),
+  setDailyPlan: (date, planText) => ipcRenderer.invoke('daily:setPlan', { date, planText }),
+  endDailySession: (date, summaryText) => ipcRenderer.invoke('daily:end', { date, summaryText }),
+  getDailySession: (date) => ipcRenderer.invoke('daily:get', { date }),
 });

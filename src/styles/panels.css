@@ -1,0 +1,119 @@
+/* =========================================================================
+   Panels — generic card surfaces shared by many features.
+   Classes: panel-card, content-card, content-card-header, composer-card,
+            insight-card, empty-panel, section-heading, panel-stack (already
+            in workspace.css; left there). Eyebrow is in base.css.
+   ========================================================================= */
+
+/* ---------- Generic surfaces ---------- */
+.panel-card,
+.content-card,
+.composer-card,
+.insight-card,
+.empty-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-5);
+  background: var(--c-panel);
+  border: var(--bw-card) solid var(--c-line);
+  border-radius: var(--r-card);
+  box-shadow: var(--shadow-sm);
+}
+
+[data-theme="pixel"] .panel-card,
+[data-theme="pixel"] .content-card,
+[data-theme="pixel"] .composer-card,
+[data-theme="pixel"] .insight-card,
+[data-theme="pixel"] .empty-panel {
+  background: #FFF;
+  border: 2px solid #000;
+  border-radius: 0;
+  box-shadow: 4px 4px 0 #000;
+}
+
+/* ---------- Composer card (input-heavy) ---------- */
+.composer-card {
+  background: var(--c-panel-sub);
+}
+
+[data-theme="pixel"] .composer-card {
+  background: #FFF;
+}
+
+/* ---------- Section heading (eyebrow + title + optional action) ---------- */
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+
+.section-heading > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.section-heading h3 {
+  font-size: var(--fs-lg);
+  margin: 0;
+}
+
+.section-heading p {
+  font-size: var(--fs-sm);
+  color: var(--c-ink-muted);
+}
+
+/* ---------- Content card variants ---------- */
+.content-card {
+  gap: var(--sp-3);
+}
+
+.content-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--sp-3);
+}
+
+.content-card-header > div:first-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.content-card-header strong {
+  font-family: var(--font-heading);
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semi);
+  color: var(--c-ink);
+  text-transform: var(--tt-heading);
+  letter-spacing: var(--letter-heading);
+  display: block;
+}
+
+/* ---------- Empty panel ---------- */
+.empty-panel {
+  align-items: flex-start;
+  text-align: left;
+  background: var(--c-panel-sub);
+}
+
+.empty-panel h3 {
+  font-size: var(--fs-md);
+  margin-bottom: 4px;
+}
+
+.empty-panel p {
+  color: var(--c-ink-muted);
+  font-size: var(--fs-sm);
+}
+
+[data-theme="pixel"] .empty-panel {
+  background: #FFF;
+  box-shadow: 3px 3px 0 #000;
+}

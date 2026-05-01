@@ -40,8 +40,40 @@ const {
   exportToHTML,
   exportToJSON,
   createSharePackage,
+  listWritingScenarios,
+  addWritingScenario,
+  updateWritingScenario,
+  deleteWritingScenario,
+  resetWritingScenarioToDefault,
+  getItalicGuide,
+  setItalicGuide,
+  getZoteroConfig,
+  setZoteroConfig,
+  addProgressEntry,
+  updateProgressEntry,
+  deleteProgressEntry,
+  listProgressEntries,
+  linkProgressEntryToFinding,
+  addFinding,
+  updateFinding,
+  deleteFinding,
+  listFindings,
+  startDailySession,
+  setDailyPlan,
+  endDailySession,
+  getDailySession,
 } = require('./storage.cjs');
 const { startMcpServer } = require('./mcp-server.cjs');
+const {
+  listProviders,
+  addProvider: addProviderStorage,
+  updateProvider: updateProviderStorage,
+  deleteProvider: deleteProviderStorage,
+  setActiveProvider: setActiveProviderStorage,
+} = require('./storage.cjs');
+const llmKeyStore = require('./llmKeyStore.cjs');
+const llmClient = require('./llmClient.cjs');
+const { exportArticleDocx } = require('./docxExporter.cjs');
 
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
 const isMcpMode = process.argv.includes('--mcp-server');
@@ -273,6 +305,11 @@ function registerIpc() {
     await shell.showItemInFolder(exportPath);
     return exportPath;
   });
+  ipcMain.handle('article:exportDocx', async (_event, { articleId, templateId, applyItalicGuide }) => {
+    const exportPath = await exportArticleDocx(articleId, templateId, { applyItalicGuide: !!applyItalicGuide });
+    await shell.showItemInFolder(exportPath);
+    return exportPath;
+  });
   ipcMain.handle('article:getWritingGuidance', async (_event, { articleId, targetSection }) =>
     getWritingGuidance(articleId, targetSection),
   );
@@ -423,6 +460,136 @@ function registerIpc() {
       throw error;
     }
   });
+
+  // ---------- LLM provider management ----------
+  const { PRESETS } = require('./llmPresets.cjs');
+
+  function enrichProviders() {
+    const { providers, activeId } = listProviders();
+    return {
+      providers: providers.map((p) => ({ ...p, hasApiKey: llmKeyStore.hasKey(p.id) })),
+      activeId,
+      presets: PRESETS,
+    };
+  }
+
+  ipcMain.handle('llm:listProviders', async () => enrichProviders());
+
+  ipcMain.handle('llm:addProvider', async (_event, { draft }) => {
+    const { apiKey, ...meta } = draft || {};
+    const provider = addProviderStorage(meta);
+    if (apiKey && typeof apiKey === 'string' && apiKey.trim()) {
+      try {
+        llmKeyStore.setKey(provider.id, apiKey.trim());
+      } catch (error) {
+        console.warn('Failed to save API key:', error.message);
+      }
+    }
+    return enrichProviders();
+  });
+
+  ipcMain.handle('llm:updateProvider', async (_event, { id, patch }) => {
+    const { apiKey, ...meta } = patch || {};
+    if (Object.keys(meta).length > 0) {
+      updateProviderStorage(id, meta);
+    }
+    if (typeof apiKey === 'string' && apiKey.trim()) {
+      try {
+        llmKeyStore.setKey(id, apiKey.trim());
+      } catch (error) {
+        console.warn('Failed to save API key:', error.message);
+      }
+    }
+    return enrichProviders();
+  });
+
+  ipcMain.handle('llm:deleteProvider', async (_event, { id }) => {
+    deleteProviderStorage(id);
+    try { llmKeyStore.deleteKey(id); } catch {}
+    return enrichProviders();
+  });
+
+  ipcMain.handle('llm:setActiveProvider', async (_event, { id }) => {
+    setActiveProviderStorage(id);
+    return enrichProviders();
+  });
+
+  ipcMain.handle('llm:testProvider', async (_event, { id }) => {
+    return llmClient.testProvider(id);
+  });
+
+  // ---------- LLM chat ----------
+  ipcMain.handle('llm:startChat', async (event, params) => {
+    const win = BrowserWindow.fromWebContents(event.sender) || BrowserWindow.getAllWindows()[0];
+    const { activeId } = listProviders();
+    if (!activeId) {
+      return { ok: false, error: '未设置活跃 Provider' };
+    }
+    return llmClient.startChat({ ...params, providerId: activeId, mainWindow: win });
+  });
+
+  ipcMain.handle('llm:cancelSession', async (_event, { sessionId }) => {
+    llmClient.cancelSession(sessionId);
+  });
+
+  ipcMain.handle('llm:approve', async (_event, { sessionId, callId, approved, alwaysAllow }) => {
+    llmClient.resolveApproval(sessionId, callId, approved, alwaysAllow);
+  });
+
+  ipcMain.handle('scenario:list', () => listWritingScenarios());
+  ipcMain.handle('scenario:add', (_, { draft }) => addWritingScenario(draft));
+  ipcMain.handle('scenario:update', (_, { id, patch }) => updateWritingScenario(id, patch));
+  ipcMain.handle('scenario:delete', (_, { id }) => deleteWritingScenario(id));
+  ipcMain.handle('scenario:reset', (_, { id }) => resetWritingScenarioToDefault(id));
+  ipcMain.handle('italic:get', () => getItalicGuide());
+  ipcMain.handle('italic:set', (_, { config }) => setItalicGuide(config));
+  ipcMain.handle('zotero:getConfig', () => getZoteroConfig());
+  ipcMain.handle('zotero:setConfig', (_, { config }) => setZoteroConfig(config));
+
+  // Progress entries / Findings / Daily session
+  ipcMain.handle(
+    'progress:add',
+    wrapStateMutation(async (_event, { payload }) => addProgressEntry(payload, 'user')),
+  );
+  ipcMain.handle(
+    'progress:update',
+    wrapStateMutation(async (_event, { entryId, patch }) => updateProgressEntry(entryId, patch)),
+  );
+  ipcMain.handle(
+    'progress:delete',
+    wrapStateMutation(async (_event, { entryId }) => deleteProgressEntry(entryId)),
+  );
+  ipcMain.handle('progress:list', (_event, { filter }) => listProgressEntries(filter || {}));
+  ipcMain.handle(
+    'progress:link',
+    wrapStateMutation(async (_event, { entryId, findingId }) => linkProgressEntryToFinding(entryId, findingId)),
+  );
+  ipcMain.handle(
+    'finding:add',
+    wrapStateMutation(async (_event, { articleId, sectionType, payload }) => addFinding(articleId, sectionType, payload)),
+  );
+  ipcMain.handle(
+    'finding:update',
+    wrapStateMutation(async (_event, { articleId, findingId, patch }) => updateFinding(articleId, findingId, patch)),
+  );
+  ipcMain.handle(
+    'finding:delete',
+    wrapStateMutation(async (_event, { articleId, findingId }) => deleteFinding(articleId, findingId)),
+  );
+  ipcMain.handle('finding:list', (_event, { articleId, sectionType }) => listFindings(articleId, sectionType));
+  ipcMain.handle(
+    'daily:start',
+    wrapStateMutation(async (_event, { date, planText }) => startDailySession(date, planText)),
+  );
+  ipcMain.handle(
+    'daily:setPlan',
+    wrapStateMutation(async (_event, { date, planText }) => setDailyPlan(date, planText)),
+  );
+  ipcMain.handle(
+    'daily:end',
+    wrapStateMutation(async (_event, { date, summaryText }) => endDailySession(date, summaryText)),
+  );
+  ipcMain.handle('daily:get', (_event, { date }) => getDailySession(date));
 }
 
 async function startApplication() {

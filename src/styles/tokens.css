@@ -1,0 +1,228 @@
+/* =========================================================================
+   SciPaper Todo — Design Tokens
+   Drop-in replacement for the top of src/index.css.
+   All visual differences between themes live here as CSS variable overrides.
+   Components consume tokens; they do NOT branch on data-theme.
+   ========================================================================= */
+
+:root {
+  /* --- Type ---------------------------------------------------------- */
+  --font-heading: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua',
+                  'Source Han Serif SC', 'Songti SC', serif;
+  --font-body:    'Inter', 'Avenir Next', 'Segoe UI',
+                  'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-mono:    'IBM Plex Mono', 'JetBrains Mono', 'Cascadia Code',
+                  'SFMono-Regular', Consolas, monospace;
+
+  --fs-xs: 0.75rem;   /* 12 */
+  --fs-sm: 0.85rem;   /* 13.6 */
+  --fs-base: 0.95rem; /* 15.2 */
+  --fs-md: 1.05rem;   /* 16.8 */
+  --fs-lg: 1.25rem;   /* 20 */
+  --fs-xl: 1.6rem;    /* 25.6 */
+  --fs-2xl: 2.1rem;   /* 33.6 */
+  --fs-3xl: 2.8rem;   /* 44.8 */
+
+  --lh-tight: 1.25;
+  --lh-body:  1.65;
+
+  --fw-regular: 400;
+  --fw-medium:  500;
+  --fw-semi:    600;
+  --fw-bold:    700;
+
+  --tt-heading: none;     /* Pixel overrides to uppercase */
+  --letter-heading: -0.01em;
+
+  /* --- Spacing ------------------------------------------------------- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 64px;
+
+  /* --- Radius -------------------------------------------------------- */
+  --r-sm:   12px;
+  --r-md:   16px;
+  --r-lg:   24px;
+  --r-xl:   32px;
+  --r-pill: 999px;
+
+  /* --- Border width -------------------------------------------------- */
+  --bw: 1px;
+
+  /* --- Transition ---------------------------------------------------- */
+  --t-fast: 140ms ease;
+  --t-base: 200ms cubic-bezier(.3,.7,.4,1);
+
+  /* --- Backdrop ------------------------------------------------------ */
+  --backdrop-blur: blur(16px);
+
+  /* --- Status semantic (kept stable across themes; pixel desaturates) */
+  --c-success: #2E8B57;
+  --c-warning: #C77B2A;
+  --c-danger:  #B5443A;
+  --c-info:    #4A6AA5;
+}
+
+/* =========================================================================
+   Theme: Claude  (default)
+   Warm coral on cream, serif headings, soft 24px radius, soft shadows.
+   ========================================================================= */
+:root,
+[data-theme="claude"] {
+  --c-bg:           #F0EEE6;
+  --c-bg-deep:      #E8E2D2;
+  --c-panel:        #FFFFFF;
+  --c-panel-soft:   rgba(255, 255, 255, 0.78);
+  --c-panel-sub:    #FBF9F2;
+
+  --c-ink:          #1B1B1A;
+  --c-ink-muted:    #6B6864;
+  --c-ink-faint:    #9C9690;
+
+  --c-line:         rgba(27, 27, 26, 0.10);
+  --c-line-strong:  rgba(27, 27, 26, 0.18);
+
+  --c-accent:       #D97757;
+  --c-accent-strong:#B85A3D;
+  --c-accent-soft:  rgba(217, 119, 87, 0.12);
+  --c-accent-tint:  #FBE9DF;
+
+  --c-on-accent:    #FFFCF7;
+
+  --shadow-sm: 0 4px 14px rgba(54, 36, 22, 0.06);
+  --shadow-md: 0 12px 28px rgba(54, 36, 22, 0.08);
+  --shadow-lg: 0 24px 56px rgba(54, 36, 22, 0.10);
+
+  --r-card:   var(--r-lg);
+  --r-button: var(--r-pill);
+  --r-input:  var(--r-md);
+
+  --bw-card: 1px;
+
+  --bg-decor:
+    radial-gradient(circle at 10% 0%, rgba(255,255,255,0.7), transparent 38%),
+    radial-gradient(circle at 100% 100%, rgba(217,119,87,0.08), transparent 30%);
+
+  --grid-overlay: none;
+
+  /* Wordmark + brand glyph */
+  --brand-glyph-bg: #1B1B1A;
+  --brand-glyph-fg: #F0EEE6;
+
+  /* Tag color treatment: tinted backgrounds, dark ink */
+  --tag-mode: tint;
+}
+
+/* =========================================================================
+   Theme: Pixel  (B&W terminal, hard offset shadow, monospace)
+   Zero radius. 2px black borders. 4px 4px 0 #000 shadow.
+   ========================================================================= */
+[data-theme="pixel"] {
+  --c-bg:           #FFFFFF;
+  --c-bg-deep:      #F2F2F2;
+  --c-panel:        #FFFFFF;
+  --c-panel-soft:   #FFFFFF;
+  --c-panel-sub:    #FAFAFA;
+
+  --c-ink:          #000000;
+  --c-ink-muted:    #555555;
+  --c-ink-faint:    #888888;
+
+  --c-line:         #000000;
+  --c-line-strong:  #000000;
+
+  --c-accent:       #000000;
+  --c-accent-strong:#000000;
+  --c-accent-soft:  #EAEAEA;
+  --c-accent-tint:  #EAEAEA;
+
+  --c-on-accent:    #FFFFFF;
+
+  --shadow-sm: 2px 2px 0 #000;
+  --shadow-md: 4px 4px 0 #000;
+  --shadow-lg: 6px 6px 0 #000;
+
+  --r-card:   0;
+  --r-button: 0;
+  --r-input:  0;
+  --r-sm:     0;
+  --r-md:     0;
+  --r-lg:     0;
+  --r-xl:     0;
+  --r-pill:   0;
+
+  --bw: 2px;
+  --bw-card: 2px;
+
+  --backdrop-blur: none;
+
+  --font-heading: 'IBM Plex Mono', 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+  --font-body:    'IBM Plex Mono', 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
+  --tt-heading: uppercase;
+  --letter-heading: 0.04em;
+
+  --bg-decor: none;
+  --grid-overlay:
+    repeating-linear-gradient(0deg, transparent 0, transparent 23px, rgba(0,0,0,0.045) 23px, rgba(0,0,0,0.045) 24px),
+    repeating-linear-gradient(90deg, transparent 0, transparent 23px, rgba(0,0,0,0.045) 23px, rgba(0,0,0,0.045) 24px);
+
+  --brand-glyph-bg: #000000;
+  --brand-glyph-fg: #FFFFFF;
+
+  /* Status: desaturate to gray so pixel stays B&W */
+  --c-success: #000;
+  --c-warning: #000;
+  --c-danger:  #000;
+  --c-info:    #000;
+
+  --tag-mode: outline;
+}
+
+/* =========================================================================
+   Theme: Fresh  (mint serif, airy, plant-quiet)
+   ========================================================================= */
+[data-theme="fresh"] {
+  --c-bg:           #F1F8F4;
+  --c-bg-deep:      #DCEBE2;
+  --c-panel:        #FFFFFF;
+  --c-panel-soft:   rgba(255, 255, 255, 0.82);
+  --c-panel-sub:    #F5FAF6;
+
+  --c-ink:          #1F3D2A;
+  --c-ink-muted:    #5A7064;
+  --c-ink-faint:    #93A89A;
+
+  --c-line:         rgba(46, 139, 87, 0.14);
+  --c-line-strong:  rgba(46, 139, 87, 0.28);
+
+  --c-accent:       #2E8B57;
+  --c-accent-strong:#1F6B41;
+  --c-accent-soft:  rgba(46, 139, 87, 0.12);
+  --c-accent-tint:  #DDEEE3;
+
+  --c-on-accent:    #FFFFFF;
+
+  --shadow-sm: 0 4px 14px rgba(31, 107, 65, 0.07);
+  --shadow-md: 0 14px 32px rgba(31, 107, 65, 0.10);
+  --shadow-lg: 0 22px 50px rgba(31, 107, 65, 0.12);
+
+  --r-card:   var(--r-lg);
+  --r-button: var(--r-pill);
+  --r-input:  var(--r-md);
+
+  --bg-decor:
+    radial-gradient(circle at 10% 0%, rgba(255,255,255,0.78), transparent 38%),
+    radial-gradient(circle at 100% 100%, rgba(46,139,87,0.10), transparent 32%);
+
+  --grid-overlay: none;
+
+  --brand-glyph-bg: #1F6B41;
+  --brand-glyph-fg: #F1F8F4;
+
+  --tag-mode: tint;
+}

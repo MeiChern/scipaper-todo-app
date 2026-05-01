@@ -1,24 +1,12 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
+import type { CreateThesisPayload } from '../types'
 
 interface ThesisWizardProps {
   open: boolean
   busy: boolean
   onClose: () => void
   onSubmit: (payload: CreateThesisPayload) => Promise<void>
-}
-
-interface CreateThesisPayload {
-  title: string
-  titleEn: string
-  author: string
-  supervisor: string
-  institution: string
-  department: string
-  degree: 'Master' | 'PhD'
-  abstractZh: string
-  abstractEn: string
-  keywords: string[]
 }
 
 const STEP_LABELS = ['基本信息', '作者与导师', '机构信息', '摘要与关键词', '确认创建']
@@ -80,8 +68,8 @@ export function ThesisWizard({ open, busy, onClose, onSubmit }: ThesisWizardProp
     step === 4
 
   return createPortal(
-    <div className="modal-backdrop" role="presentation">
-      <div className="modal-card">
+    <div className="modal-overlay" role="presentation">
+      <div className="modal-dialog">
         <div className="modal-header">
           <div>
             <p className="eyebrow">创建学位论文</p>

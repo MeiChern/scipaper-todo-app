@@ -88,11 +88,59 @@ export interface ContentBlock {
   fileSize?: number | null
 }
 
+export type FindingStatus = 'planned' | 'inProgress' | 'done'
+
+export interface Finding {
+  id: string
+  sectionId: string
+  title: string
+  description?: string
+  status: FindingStatus
+  orderIndex: number
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Section {
   id: string
   type: SectionType
   orderIndex: number
   contentBlocks: ContentBlock[]
+  findings?: Finding[]
+}
+
+export type ProgressEntryKind =
+  | 'read'        // 读了一篇/一段文献
+  | 'experiment'  // 做了实验
+  | 'writing'     // 写了字（也会自动从 add_text_block 派生）
+  | 'idea'        // 蹦出一个新想法/假设
+  | 'cite'        // 录入了一条参考文献
+  | 'analysis'    // 跑了数据分析
+  | 'focus'       // 一段番茄钟专注
+  | 'mood'        // 一次心情记录
+
+export interface ProgressEntry {
+  id: string
+  date: string             // YYYY-MM-DD
+  articleId: string        // 必须挂到一篇文章
+  kind: ProgressEntryKind
+  title: string            // 一句话："读了 Smith 2024，找到 piRNA 通路反例"
+  detail?: string
+  sectionId?: string
+  findingId?: string
+  citationId?: string
+  minutesSpent?: number
+  createdAt: string
+  createdBy: 'user' | 'ai'
+}
+
+export interface DailySession {
+  date: string             // YYYY-MM-DD，主键
+  planText?: string
+  summaryText?: string
+  startedAt: string
+  endedAt?: string
+  progressEntryIds: string[]
 }
 
 export interface ResearchContext {
@@ -160,9 +208,26 @@ export interface Tag {
   createdAt: string
 }
 
-export interface TagFilter {
-  tags: Tag[]
-  matchMode: 'all' | 'any'
+export interface Citation {
+  id?: string
+  articleId?: string
+  bibtex?: string
+  title?: string
+  authors?: string
+  year?: string
+  journal?: string
+  volume?: string
+  number?: string
+  pages?: string
+  publisher?: string
+  doi?: string
+  url?: string
+  localPdfPath?: string
+  sectionLinks?: {
+    citationId: string
+    sectionId: string
+    context: string
+  }[]
 }
 
 export interface Article {
@@ -175,7 +240,7 @@ export interface Article {
   researchContext: ResearchContext
   sections: Section[]
   reviewRounds: ReviewRound[]
-  citations: unknown[]
+  citations: Citation[]
   tags: Tag[]
 }
 
@@ -228,10 +293,20 @@ export interface WritingStreak {
   todayWords: number
   dailyGoal: number
   lastWriteDate: string
+  todayAddedWords?: number
+  todayRemovedWords?: number
+  todayChangedWords?: number
+  todayByAI?: number
+  todayByManual?: number
   streakHistory: {
     date: string
     words: number
     goalMet: boolean
+    addedWords?: number
+    removedWords?: number
+    changedWords?: number
+    byAI?: number
+    byManual?: number
   }[]
   moodHistory: MoodEntry[]
 }
@@ -245,6 +320,8 @@ export interface SearchResult {
   matchStart: number
   matchEnd: number
   snippet: string
+  sectionId?: string
+  blockId?: string
 }
 
 export interface PomodoroSession {
@@ -269,15 +346,12 @@ export interface PomodoroStats {
 export interface WritingStats {
   totalArticles: number
   totalWords: number
-  totalChars: number
   averageWordsPerArticle: number
   mostUsedWords: { word: string; count: number }[]
-  sentenceLengthDistribution: { range: string; count: number }[]
-  writingFrequency: { date: string; words: number }[]
   topSections: { section: string; words: number }[]
 }
 
-export type ThemeType = 'light' | 'dark' | 'sepia' | 'green'
+export type ThemeType = 'claude' | 'pixel' | 'fresh'
 
 export interface AppState {
   baseDirectory: string
@@ -286,6 +360,8 @@ export interface AppState {
   writingStreak: WritingStreak
   pomodoroStats: PomodoroStats
   theme: ThemeType
+  progressEntries?: ProgressEntry[]
+  dailySessions?: DailySession[]
 }
 
 export interface McpInfo {
@@ -294,7 +370,6 @@ export interface McpInfo {
   baseDirectory: string
   configJson: string
   examples?: {
-    generic: string
     cursor: string
     claudeCode: string
   }
@@ -345,4 +420,105 @@ export interface UpdateThesisPayload {
   abstractZh?: string
   abstractEn?: string
   keywords?: string[]
+}
+
+export type LlmProviderKind = 'openai-compat' | 'anthropic'
+
+export interface LlmProvider {
+  id: string
+  name: string
+  kind: LlmProviderKind
+  baseUrl: string
+  model: string
+  hasApiKey: boolean
+  temperature?: number
+  maxTokens?: number
+  supportsToolUse: boolean
+  trustForWrite?: boolean
+  presetId?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface LlmPreset {
+  presetId: string
+  name: string
+  kind: LlmProviderKind
+  baseUrl: string
+  defaultModel: string
+  description: string
+  supportsToolUse: boolean
+}
+
+export interface LlmProvidersState {
+  providers: LlmProvider[]
+  activeId: string | null
+  presets: LlmPreset[]
+}
+
+export interface LlmTestResult {
+  ok: boolean
+  message: string
+}
+
+export type AssistantMessage =
+  | { id: string; role: 'user'; text: string }
+  | { id: string; role: 'assistant'; text: string; pending?: boolean }
+  | {
+      id: string
+      role: 'tool'
+      toolName: string
+      status: 'pending' | 'approved' | 'rejected' | 'running' | 'success' | 'error'
+      summary: string
+      argsJson?: string
+      result?: string
+    }
+  | { id: string; role: 'system'; text: string }
+
+export interface ApprovalRequest {
+  callId: string
+  toolName: string
+  summary: string
+  args: Record<string, unknown>
+}
+
+export interface WritingScenario {
+  id: string
+  name: string
+  description: string
+  triggerSection: string  // SectionType | 'any'
+  systemPromptAddon: string
+  userTemplate?: string
+  builtin: boolean
+  enabled: boolean
+}
+
+export interface ZoteroConfig {
+  endpoint: string  // e.g. 'http://localhost:23119'
+  userId: string    // Zotero user id, '0' for local
+  enabled: boolean
+}
+
+export interface ItalicGuide {
+  prompt: string  // meta-prompt explaining italic conventions to the LLM
+  enabled: boolean
+}
+
+export interface LlmStreamEvent {
+  sessionId: string
+  kind:
+    | 'textDelta'
+    | 'toolEvent'
+    | 'limit'
+    | 'done'
+    | 'error'
+  delta?: string
+  callId?: string
+  toolName?: string
+  summary?: string
+  argsJson?: string
+  result?: string
+  status?: 'pending' | 'approved' | 'rejected' | 'running' | 'success' | 'error'
+  message?: string
+  toolEventKind?: 'askApproval' | 'result'
 }
