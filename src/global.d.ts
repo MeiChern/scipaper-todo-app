@@ -77,6 +77,7 @@ declare global {
         templateId: string,
         applyItalicGuide?: boolean,
       ) => Promise<string>
+      exportArticleLatex: (articleId: string) => Promise<string>
       getWritingGuidance: (articleId: string, targetSection: SectionType) => Promise<string[]>
       copyText: (text: string) => void
       onStateChanged: (listener: () => void) => () => void

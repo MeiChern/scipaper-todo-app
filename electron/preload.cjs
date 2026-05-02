@@ -27,6 +27,7 @@ contextBridge.exposeInMainWorld('scipaper', {
   exportMarkdown: (articleId) => ipcRenderer.invoke('article:exportMarkdown', { articleId }),
   exportArticleDocx: (articleId, templateId, applyItalicGuide) =>
     ipcRenderer.invoke('article:exportDocx', { articleId, templateId, applyItalicGuide }),
+  exportArticleLatex: (articleId) => ipcRenderer.invoke('article:exportLatex', { articleId }),
   getWritingGuidance: (articleId, targetSection) =>
     ipcRenderer.invoke('article:getWritingGuidance', { articleId, targetSection }),
   copyText: (text) => clipboard.writeText(text),

@@ -700,6 +700,17 @@ function App() {
     }, '标签已删除')
   }
 
+  async function handleExportLatex() {
+    if (!selectedArticle) return
+    try {
+      await window.scipaper.exportArticleLatex(selectedArticle.id)
+      setNotice('LaTeX 导出成功')
+    } catch (error) {
+      console.error(error)
+      setNotice(error instanceof Error ? error.message : 'LaTeX 导出失败')
+    }
+  }
+
   async function handleExportHTML() {
     if (!selectedArticle) return
     try {
@@ -1071,6 +1082,9 @@ function App() {
                     type="button"
                   >
                     {docxBusy ? '导出中…' : '导出 docx'}
+                  </button>
+                  <button className="ghost-button" onClick={handleExportLatex} type="button" title="导出 LaTeX 工程（.tex + references.bib + 图片）">
+                    导出 LaTeX
                   </button>
                   <button className="ghost-button" onClick={handleExportHTML} type="button">
                     导出 HTML

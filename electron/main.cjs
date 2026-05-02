@@ -74,6 +74,7 @@ const {
 const llmKeyStore = require('./llmKeyStore.cjs');
 const llmClient = require('./llmClient.cjs');
 const { exportArticleDocx } = require('./docxExporter.cjs');
+const { exportArticleLatex } = require('./latexExporter.cjs');
 
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
 const isMcpMode = process.argv.includes('--mcp-server');
@@ -307,6 +308,11 @@ function registerIpc() {
   });
   ipcMain.handle('article:exportDocx', async (_event, { articleId, templateId, applyItalicGuide }) => {
     const exportPath = await exportArticleDocx(articleId, templateId, { applyItalicGuide: !!applyItalicGuide });
+    await shell.showItemInFolder(exportPath);
+    return exportPath;
+  });
+  ipcMain.handle('article:exportLatex', async (_event, { articleId }) => {
+    const exportPath = exportArticleLatex(articleId);
     await shell.showItemInFolder(exportPath);
     return exportPath;
   });
