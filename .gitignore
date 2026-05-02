@@ -14,6 +14,10 @@ release
 *.tsbuildinfo
 *.local
 
+# Planning docs
+docs/**/*plan*.md
+docs/**/plans/
+
 # Build artifacts
 *.exe
 *.zip
