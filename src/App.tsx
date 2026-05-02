@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useDeferredValue, useEffect, useRef, useState } from 'react'
 import { ArticleWizard } from './components/ArticleWizard'
 import { CitationManager } from './components/CitationManager'
 import { OutlineView } from './components/OutlineView'
@@ -9,16 +9,26 @@ import { ThesisWizard } from './components/ThesisWizard'
 import { TagManager } from './components/TagManager'
 import { HomeView } from './components/HomeView'
 import { LibraryView } from './components/LibraryView'
-import { DailyLogView } from './components/DailyLogView'
-import { SettingsView } from './components/SettingsView'
 import { AppSidebar, type AppRoute } from './components/AppSidebar'
-import { AIAssistantPanel, type AssistantMessage } from './components/AIAssistantPanel'
+import type { AssistantMessage } from './components/AIAssistantPanel'
 import { ApprovalDialog } from './components/ApprovalDialog'
-import { ShareCard } from './components/ShareCard'
 import { pickJoke, pickAnalogy } from './utils/jokesAndAnalogies'
 import type { AppState, ArticleStatus, CreateArticlePayload, CreateThesisPayload, LlmPreset, LlmProvider, McpInfo, MoodType, ProgressEntryKind, SectionType, TagColor, ThemeType, WritingStats as WritingStatsType, ApprovalRequest, WritingScenario, ItalicGuide, ZoteroConfig } from './types'
 import type { BibTeXEntry } from './utils/bibtexParser'
 import { ARTICLE_STATUS_LABEL_ZH } from './utils/articleUtils'
+
+const AIAssistantPanel = lazy(() =>
+  import('./components/AIAssistantPanel').then((module) => ({ default: module.AIAssistantPanel })),
+)
+const DailyLogView = lazy(() =>
+  import('./components/DailyLogView').then((module) => ({ default: module.DailyLogView })),
+)
+const SettingsView = lazy(() =>
+  import('./components/SettingsView').then((module) => ({ default: module.SettingsView })),
+)
+const ShareCard = lazy(() =>
+  import('./components/ShareCard').then((module) => ({ default: module.ShareCard })),
+)
 
 const SECTION_LABELS: Record<SectionType, string> = {
   Title: '题目',
@@ -56,6 +66,17 @@ function getGreeting() {
   }
 
   return '晚上好'
+}
+
+function resolveThemeValue(value: string): ThemeType {
+  const legacyMap: Record<string, ThemeType> = {
+    light: 'claude',
+    sepia: 'claude',
+    dark: 'pixel',
+    green: 'fresh',
+  }
+  const validThemes: ThemeType[] = ['claude', 'pixel', 'fresh']
+  return validThemes.includes(value as ThemeType) ? (value as ThemeType) : legacyMap[value] ?? 'claude'
 }
 
 
@@ -97,6 +118,7 @@ function App() {
   const [providers, setProviders] = useState<LlmProvider[]>([])
   const [activeProviderId, setActiveProviderId] = useState<string | null>(null)
   const [presets, setPresets] = useState<LlmPreset[]>([])
+  const [providersLoaded, setProvidersLoaded] = useState(false)
   const [aiOpen, setAiOpen] = useState(false)
   const [aiMessages, setAiMessages] = useState<AssistantMessage[]>([])
   const [aiBusy, setAiBusy] = useState(false)
@@ -107,6 +129,7 @@ function App() {
   // Writing scenarios
   const [scenarios, setScenarios] = useState<WritingScenario[]>([])
   const [currentScenarioId, setCurrentScenarioId] = useState<string>('auto')
+  const [scenariosLoaded, setScenariosLoaded] = useState(false)
 
   // Italic guide & Zotero config
   const [italicGuide, setItalicGuide] = useState<ItalicGuide>({ prompt: '', enabled: true })
@@ -118,6 +141,7 @@ function App() {
 
   // Auto-approve all in-app AI tool calls
   const [autoApproveTools, setAutoApproveToolsState] = useState(false)
+  const [settingsMetaLoaded, setSettingsMetaLoaded] = useState(false)
 
   // Pending Settings module focus (e.g. AI panel jumps to "AI Provider" submodule)
   const [pendingSettingsFocus, setPendingSettingsFocus] = useState<import('./components/SettingsView').SettingsModule | null>(null)
@@ -150,13 +174,18 @@ function App() {
 
   useEffect(() => {
     async function bootstrap() {
-      const [nextState, nextMcpInfo] = await Promise.all([window.scipaper.bootstrap(), window.scipaper.getMcpInfo()])
+      const [nextState, stats] = await Promise.all([window.scipaper.bootstrap(), window.scipaper.getWritingStats()])
+      const resolvedTheme = resolveThemeValue(nextState.theme as string)
 
       setState(nextState)
-      setMcpInfo(nextMcpInfo)
+      setTheme(resolvedTheme)
+      setWritingStats(stats)
       const savedId = readSavedArticleId()
       const restoredId = savedId && nextState.articles.some((a) => a.id === savedId) ? savedId : nextState.articles[0]?.id ?? null
       setSelectedArticleId(restoredId)
+      if (resolvedTheme !== nextState.theme) {
+        await window.scipaper.setTheme(resolvedTheme)
+      }
     }
 
     bootstrap().catch((error) => {
@@ -176,31 +205,6 @@ function App() {
       window.localStorage.removeItem(ARTICLE_STORAGE_KEY)
     }
   }, [selectedArticleId])
-
-  useEffect(() => {
-    async function loadThemeAndStats() {
-      const [currentTheme, stats] = await Promise.all([
-        window.scipaper.getTheme(),
-        window.scipaper.getWritingStats()
-      ])
-      const legacyMap: Record<string, ThemeType> = {
-        light: 'claude',
-        sepia: 'claude',
-        dark: 'pixel',
-        green: 'fresh',
-      }
-      const validThemes: ThemeType[] = ['claude', 'pixel', 'fresh']
-      const resolved: ThemeType = validThemes.includes(currentTheme as ThemeType)
-        ? (currentTheme as ThemeType)
-        : legacyMap[currentTheme as string] ?? 'claude'
-      setTheme(resolved)
-      if (resolved !== currentTheme) {
-        await window.scipaper.setTheme(resolved)
-      }
-      setWritingStats(stats)
-    }
-    loadThemeAndStats()
-  }, [])
 
   useEffect(() => {
     const unsubscribe = window.scipaper.onStateChanged(() => {
@@ -272,30 +276,44 @@ function App() {
     return () => window.removeEventListener('keydown', handleKey)
   }, [theme, wizardOpen, thesisWizardOpen])
 
-  // Load LLM providers on mount
   useEffect(() => {
-    refreshProviders().catch((error) => console.error(error))
-  }, [])
+    if (!aiOpen && route !== 'settings') {
+      return
+    }
 
-  // Load scenarios on mount
-  useEffect(() => {
-    refreshScenarios().catch((error) => console.error(error))
-  }, [])
+    if (!providersLoaded) {
+      refreshProviders().catch((error) => console.error(error))
+    }
 
-  // Load italic guide, zotero config, auto-approve flag on mount
+    if (!scenariosLoaded) {
+      refreshScenarios().catch((error) => console.error(error))
+    }
+  }, [aiOpen, route, providersLoaded, scenariosLoaded])
+
   useEffect(() => {
-    Promise.all([
-      window.scipaper.getItalicGuide(),
-      window.scipaper.getZoteroConfig(),
-      window.scipaper.getAutoApproveTools(),
-    ])
-      .then(([italic, zotero, autoApprove]) => {
-        setItalicGuide(italic)
-        setZoteroConfig(zotero)
-        setAutoApproveToolsState(Boolean(autoApprove))
-      })
-      .catch((error) => console.error(error))
-  }, [])
+    if (route !== 'settings') {
+      return
+    }
+
+    if (!mcpInfo) {
+      window.scipaper.getMcpInfo().then(setMcpInfo).catch((error) => console.error(error))
+    }
+
+    if (!settingsMetaLoaded) {
+      Promise.all([
+        window.scipaper.getItalicGuide(),
+        window.scipaper.getZoteroConfig(),
+        window.scipaper.getAutoApproveTools(),
+      ])
+        .then(([italic, zotero, autoApprove]) => {
+          setItalicGuide(italic)
+          setZoteroConfig(zotero)
+          setAutoApproveToolsState(Boolean(autoApprove))
+          setSettingsMetaLoaded(true)
+        })
+        .catch((error) => console.error(error))
+    }
+  }, [route, mcpInfo, settingsMetaLoaded])
 
   // Subscribe to LLM stream events
   useEffect(() => {
@@ -404,6 +422,7 @@ function App() {
     setProviders(data.providers)
     setActiveProviderId(data.activeId)
     setPresets(data.presets)
+    setProvidersLoaded(true)
   }
 
   async function handleAddProvider(draft: Omit<LlmProvider, 'id' | 'hasApiKey'> & { apiKey: string }) {
@@ -432,6 +451,7 @@ function App() {
   async function refreshScenarios() {
     const list = await window.scipaper.listScenarios()
     setScenarios(list)
+    setScenariosLoaded(true)
   }
   async function handleAddScenario(draft: Omit<WritingScenario, 'id' | 'builtin'>) {
     await window.scipaper.addScenario(draft)
@@ -831,72 +851,84 @@ function App() {
 
   return (
     <>
-      <ArticleWizard busy={busy} onClose={() => setWizardOpen(false)} onSubmit={handleCreateArticle} open={wizardOpen} />
-      <ThesisWizard busy={busy} onClose={() => setThesisWizardOpen(false)} onSubmit={handleCreateThesis} open={thesisWizardOpen} />
+      {wizardOpen ? (
+        <ArticleWizard busy={busy} onClose={() => setWizardOpen(false)} onSubmit={handleCreateArticle} open={wizardOpen} />
+      ) : null}
+      {thesisWizardOpen ? (
+        <ThesisWizard busy={busy} onClose={() => setThesisWizardOpen(false)} onSubmit={handleCreateThesis} open={thesisWizardOpen} />
+      ) : null}
 
-      <AIAssistantPanel
-        open={aiOpen}
-        onClose={() => setAiOpen(false)}
-        activeProvider={
-          activeProviderId
-            ? (() => {
-                const p = providers.find((x) => x.id === activeProviderId)
-                return p
-                  ? { id: p.id, name: p.name, model: p.model, supportsToolUse: p.supportsToolUse }
-                  : null
-              })()
-            : null
-        }
-        providers={providers.map((p) => ({ id: p.id, name: p.name, model: p.model, supportsToolUse: p.supportsToolUse }))}
-        onSwitchProvider={handleSetActiveProvider}
-        messages={aiMessages}
-        busy={aiBusy}
-        toolCallCount={aiToolCallCount}
-        onSend={handleAiSend}
-        onCancel={handleAiCancel}
-        contextHint={
-          selectedArticle
-            ? `当前文章: ${selectedArticle.title}${isSectionTab(articleTab) ? ' · ' + articleTab : ''}`
-            : undefined
-        }
-        onOpenSettings={() => {
-          setAiOpen(false)
-          setPendingSettingsFocus('ai')
-          setRoute('settings')
-        }}
-        scenarios={scenarios.filter((s) => s.enabled)}
-        currentScenarioId={currentScenarioId}
-        onChangeScenario={setCurrentScenarioId}
-      />
+      {aiOpen ? (
+        <Suspense fallback={null}>
+          <AIAssistantPanel
+            open={aiOpen}
+            onClose={() => setAiOpen(false)}
+            activeProvider={
+              activeProviderId
+                ? (() => {
+                    const p = providers.find((x) => x.id === activeProviderId)
+                    return p
+                      ? { id: p.id, name: p.name, model: p.model, supportsToolUse: p.supportsToolUse }
+                      : null
+                  })()
+                : null
+            }
+            providers={providers.map((p) => ({ id: p.id, name: p.name, model: p.model, supportsToolUse: p.supportsToolUse }))}
+            onSwitchProvider={handleSetActiveProvider}
+            messages={aiMessages}
+            busy={aiBusy}
+            toolCallCount={aiToolCallCount}
+            onSend={handleAiSend}
+            onCancel={handleAiCancel}
+            contextHint={
+              selectedArticle
+                ? `当前文章: ${selectedArticle.title}${isSectionTab(articleTab) ? ' · ' + articleTab : ''}`
+                : undefined
+            }
+            onOpenSettings={() => {
+              setAiOpen(false)
+              setPendingSettingsFocus('ai')
+              setRoute('settings')
+            }}
+            scenarios={scenarios.filter((s) => s.enabled)}
+            currentScenarioId={currentScenarioId}
+            onChangeScenario={setCurrentScenarioId}
+          />
+        </Suspense>
+      ) : null}
 
-      <ApprovalDialog
-        request={approvalRequest}
-        onApprove={(callId, alwaysAllow) => handleApprove(callId, alwaysAllow)}
-        onReject={(callId) => handleReject(callId)}
-      />
-
-      {state ? (
-        <ShareCard
-          open={shareOpen}
-          onClose={() => setShareOpen(false)}
-          theme={theme}
-          data={{
-            date: today,
-            todayWords: state.writingStreak.todayWords ?? 0,
-            addedWords: state.writingStreak.todayAddedWords ?? Math.max(0, state.writingStreak.todayWords ?? 0),
-            removedWords: state.writingStreak.todayRemovedWords ?? 0,
-            changedWords: state.writingStreak.todayChangedWords ?? Math.abs(state.writingStreak.todayWords ?? 0),
-            byAI: state.writingStreak.todayByAI ?? 0,
-            byManual: state.writingStreak.todayByManual ?? Math.abs(state.writingStreak.todayWords ?? 0),
-            focusMinutes: state.pomodoroStats?.todayMinutes ?? 0,
-            streak: state.writingStreak.currentStreak ?? 0,
-            dailyGoal: state.writingStreak.dailyGoal ?? 1000,
-            analogy: pickAnalogy(Math.max(0, state.writingStreak.todayWords ?? 0)),
-            joke: shareJoke,
-            entriesByKind,
-          }}
-          onRegenerateJoke={regenerateJoke}
+      {approvalRequest ? (
+        <ApprovalDialog
+          request={approvalRequest}
+          onApprove={(callId, alwaysAllow) => handleApprove(callId, alwaysAllow)}
+          onReject={(callId) => handleReject(callId)}
         />
+      ) : null}
+
+      {state && shareOpen ? (
+        <Suspense fallback={null}>
+          <ShareCard
+            open={shareOpen}
+            onClose={() => setShareOpen(false)}
+            theme={theme}
+            data={{
+              date: today,
+              todayWords: state.writingStreak.todayWords ?? 0,
+              addedWords: state.writingStreak.todayAddedWords ?? Math.max(0, state.writingStreak.todayWords ?? 0),
+              removedWords: state.writingStreak.todayRemovedWords ?? 0,
+              changedWords: state.writingStreak.todayChangedWords ?? Math.abs(state.writingStreak.todayWords ?? 0),
+              byAI: state.writingStreak.todayByAI ?? 0,
+              byManual: state.writingStreak.todayByManual ?? Math.abs(state.writingStreak.todayWords ?? 0),
+              focusMinutes: state.pomodoroStats?.todayMinutes ?? 0,
+              streak: state.writingStreak.currentStreak ?? 0,
+              dailyGoal: state.writingStreak.dailyGoal ?? 1000,
+              analogy: pickAnalogy(Math.max(0, state.writingStreak.todayWords ?? 0)),
+              joke: shareJoke,
+              entriesByKind,
+            }}
+            onRegenerateJoke={regenerateJoke}
+          />
+        </Suspense>
       ) : null}
 
       <div className="app-shell">
@@ -954,53 +986,57 @@ function App() {
           ) : null}
 
           {state && route === 'daily' ? (
-            <DailyLogView
-              state={state}
-              onAddProgressEntry={handleAddProgressEntry}
-              onDeleteProgressEntry={handleDeleteProgressEntry}
-              onSetDailyPlan={handleSetDailyPlan}
-              onEndDailySession={handleEndDailySession}
-              onAddPomodoro={handleAddPomodoro}
-              onAddMood={handleAddMood}
-              onUpdateGoal={async (goal) => {
-                await mutate(() => window.scipaper.updateDailyGoal(goal))
-              }}
-              onShareToday={openShareCard}
-            />
+            <Suspense fallback={<section className="empty-state"><p>载入中…</p></section>}>
+              <DailyLogView
+                state={state}
+                onAddProgressEntry={handleAddProgressEntry}
+                onDeleteProgressEntry={handleDeleteProgressEntry}
+                onSetDailyPlan={handleSetDailyPlan}
+                onEndDailySession={handleEndDailySession}
+                onAddPomodoro={handleAddPomodoro}
+                onAddMood={handleAddMood}
+                onUpdateGoal={async (goal) => {
+                  await mutate(() => window.scipaper.updateDailyGoal(goal))
+                }}
+                onShareToday={openShareCard}
+              />
+            </Suspense>
           ) : null}
 
           {state && route === 'settings' ? (
-            <SettingsView
-              state={state}
-              theme={theme}
-              onThemeChange={handleThemeChange}
-              mcpInfo={mcpInfo}
-              providers={providers}
-              activeProviderId={activeProviderId}
-              presets={presets}
-              onAddProvider={handleAddProvider}
-              onUpdateProvider={handleUpdateProvider}
-              onDeleteProvider={handleDeleteProvider}
-              onSetActiveProvider={handleSetActiveProvider}
-              onTestProvider={handleTestProvider}
-              scenarios={scenarios}
-              onAddScenario={handleAddScenario}
-              onUpdateScenario={handleUpdateScenario}
-              onDeleteScenario={handleDeleteScenario}
-              onResetScenario={handleResetScenario}
-              italicGuide={italicGuide}
-              onUpdateItalicGuide={handleUpdateItalicGuide}
-              zoteroConfig={zoteroConfig}
-              onUpdateZoteroConfig={handleUpdateZoteroConfig}
-              writingStats={writingStats}
-              autoApproveTools={autoApproveTools}
-              onSetAutoApproveTools={async (value) => {
-                const saved = await window.scipaper.setAutoApproveTools(value)
-                setAutoApproveToolsState(Boolean(saved))
-              }}
-              initialFocus={pendingSettingsFocus}
-              onFocusConsumed={() => setPendingSettingsFocus(null)}
-            />
+            <Suspense fallback={<section className="empty-state"><p>载入中…</p></section>}>
+              <SettingsView
+                state={state}
+                theme={theme}
+                onThemeChange={handleThemeChange}
+                mcpInfo={mcpInfo}
+                providers={providers}
+                activeProviderId={activeProviderId}
+                presets={presets}
+                onAddProvider={handleAddProvider}
+                onUpdateProvider={handleUpdateProvider}
+                onDeleteProvider={handleDeleteProvider}
+                onSetActiveProvider={handleSetActiveProvider}
+                onTestProvider={handleTestProvider}
+                scenarios={scenarios}
+                onAddScenario={handleAddScenario}
+                onUpdateScenario={handleUpdateScenario}
+                onDeleteScenario={handleDeleteScenario}
+                onResetScenario={handleResetScenario}
+                italicGuide={italicGuide}
+                onUpdateItalicGuide={handleUpdateItalicGuide}
+                zoteroConfig={zoteroConfig}
+                onUpdateZoteroConfig={handleUpdateZoteroConfig}
+                writingStats={writingStats}
+                autoApproveTools={autoApproveTools}
+                onSetAutoApproveTools={async (value) => {
+                  const saved = await window.scipaper.setAutoApproveTools(value)
+                  setAutoApproveToolsState(Boolean(saved))
+                }}
+                initialFocus={pendingSettingsFocus}
+                onFocusConsumed={() => setPendingSettingsFocus(null)}
+              />
+            </Suspense>
           ) : null}
 
           {state && route === 'article' && !selectedArticle ? (
@@ -1174,7 +1210,10 @@ function App() {
                         mutate(() => window.scipaper.deleteBlock(selectedArticle.id, blockId), '内容块已删除')
                       }
                       onOpenAsset={async (blockId) => {
-                        await window.scipaper.openBlockAsset(selectedArticle.id, blockId)
+                        const opened = await window.scipaper.openBlockAsset(selectedArticle.id, blockId)
+                        if (!opened) {
+                          setNotice('附件不存在或需要重新链接')
+                        }
                       }}
                       onUpdateBlock={(blockId, content, description) =>
                         mutate(

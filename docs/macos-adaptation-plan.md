@@ -4,6 +4,11 @@
 **Target**: ship a signed, notarized macOS build that installs cleanly via direct dmg download or `brew install --cask`.
 **Authoring environment**: macOS 26.3, Apple Silicon (arm64), Xcode CLT present, Node 25.8 / npm 11.12.
 
+**Implementation status (2026-05-03)**:
+- Phase 1 platform fixes are implemented in this branch: macOS menu, bundle icon/metadata, darwin MCP config, unpacked MCP runtime, Windows-import attachment warnings, and README macOS sections.
+- Phase 2 is signing-ready in code and CI, but still blocked on Apple Developer credentials in repository secrets.
+- Phase 5 still needs a separate Homebrew tap repository and release SHA automation.
+
 ---
 
 ## 1. Current state assessment
@@ -21,9 +26,9 @@ What's missing:
 - No menu template — Cmd+C/V/X/A/Z and the standard macOS app menu won't behave correctly.
 - No `.icns` icon, no display-name metadata in `extendInfo`.
 - `hardenedRuntime: false`, `gatekeeperAssess: false`, `identity: null` — i.e. unsigned, unnotarized; users hit Gatekeeper's "damaged" wall.
-- MCP config emitted by `buildMcpInfo` (`electron/main.cjs:84`) uses `process.execPath`, which inside a packaged `.app` resolves to a path containing a space — Cursor / Claude Code's MCP loaders won't spawn it cleanly.
-- `windowsPathToCurrentPlatform` (`electron/storage.cjs:437`) maps imported Windows asset paths to `/mnt/c/...`, which is a WSL convention and wrong on darwin.
-- README declares "Windows x64 binaries only" and contains no macOS install path.
+- MCP config emitted by `buildMcpInfo` used to rely on `process.execPath`; this branch now emits `node` + the unpacked `mcp-cli.cjs` path on darwin.
+- `windowsPathToCurrentPlatform` used to map imported Windows asset paths to `/mnt/c/...` on every non-Windows platform; this branch now warns and marks those attachments as re-link-needed on darwin.
+- README previously declared "Windows x64 binaries only"; this branch adds macOS install and MCP guidance.
 - No Homebrew Cask, no tap repo, no auto-bump workflow.
 
 The codebase is essentially cross-platform. The work is in **packaging, identity, UX polish, and distribution**, not in the application itself.
@@ -61,7 +66,7 @@ The codebase is essentially cross-platform. The work is in **packaging, identity
 ## 4. Phase 0 — Local sanity (½ day, no blockers)
 
 1. `npm ci && npm run dev` — confirm dev server + Electron come up on arm64 macOS 26.3.
-2. `npm run dist:mac` — produce **unsigned** arm64 `.dmg` + `.zip`. Skip x64 here to keep the loop tight.
+2. `npm run dist:mac:arm64` — produce **unsigned** arm64 `.dmg` + `.zip`. Use `npm run dist:mac` only when you intentionally want both arm64 and x64.
 3. Smoke test: create article → add text block → add image attachment → export docx, markdown, HTML. Confirm `~/Documents/SciPaperTodo/` populates correctly.
 4. Confirm `safeStorage.isEncryptionAvailable()` returns true (Keychain backing) and that an LLM provider key persists across relaunch.
 
@@ -92,17 +97,17 @@ Add an explicit menu template in `electron/main.cjs` using `Menu.buildFromTempla
 
 ### 5.3 MCP config: prefer `mcp-cli.cjs` over `process.execPath` on darwin
 
-In `electron/main.cjs:84` `buildMcpInfo`, when `process.platform === 'darwin'`, emit a config that uses `node` + the absolute path to `mcp-cli.cjs` *inside the app bundle* (it's at `…/SciPaper Todo.app/Contents/Resources/app.asar/electron/mcp-cli.cjs` after asar packaging). Two reasons:
+In `electron/main.cjs:84` `buildMcpInfo`, when `process.platform === 'darwin'`, emit a config that uses `node` + the absolute path to `mcp-cli.cjs` *inside the app bundle* (this branch uses `…/SciPaper Todo.app/Contents/Resources/app.asar.unpacked/electron/mcp-cli.cjs`). Two reasons:
 - `process.execPath` for the GUI binary contains a space (`SciPaper Todo`) and a `.app/Contents/MacOS/...` path that some MCP clients fail to spawn.
 - The CLI entry is already designed for non-Electron runtime use (see `electron/mcp-cli.cjs:7`).
 
-If `mcp-cli.cjs` lives inside `app.asar`, it must be unpacked — add `"asarUnpack": ["electron/mcp-cli.cjs", "electron/storage.cjs", "electron/mcp-server.cjs", ...transitively required files]` to the build config, or simpler: ship those files outside asar from the start. Verify the chosen approach by spawning `node` against the resolved path manually.
+External Node cannot load files or dependencies from Electron's asar archive. Keep the MCP CLI, Electron-side `.cjs` files, and runtime `node_modules` available outside asar. This branch uses `"asarUnpack": ["electron/**/*.cjs", "node_modules/**"]`; verify by spawning `node` against the resolved `app.asar.unpacked` path manually.
 
 For users who specifically want the GUI binary to handle MCP, JSON-encode the path correctly (already implicit via `JSON.stringify`) and document it as the secondary path.
 
 ### 5.4 Windows-import path safety
 
-In `electron/storage.cjs:437` `windowsPathToCurrentPlatform`, on darwin the current `/mnt/c/...` mapping is meaningless. For v1, log a clear warning when a Windows-absolute attachment path is encountered on darwin and surface a non-fatal error in the UI ("This attachment was imported from Windows; please re-link it"). Defer the actual re-link UI to a later release unless cross-platform DB sync becomes a priority.
+In `electron/storage.cjs:437` `windowsPathToCurrentPlatform`, on darwin the previous `/mnt/c/...` mapping was meaningless. This branch logs a clear warning when a Windows-absolute attachment path is encountered on darwin and surfaces a non-fatal error in the UI ("This attachment was imported from Windows; please re-link it"). Defer the actual re-link UI to a later release unless cross-platform DB sync becomes a priority.
 
 ### 5.5 README
 
@@ -163,7 +168,7 @@ In the GitHub repo settings, add secrets:
 
 - `MAC_CERTS` — base64 of the `.p12`
 - `MAC_CERTS_PASSWORD` — `.p12` password
-- `APPLE_API_KEY` — base64 of the `.p8` private key (or store the file path and write it from the workflow)
+- `APPLE_API_KEY` — base64 of the `.p8` private key; the workflow writes it to `$RUNNER_TEMP/AuthKey_<KEY_ID>.p8`
 - `APPLE_API_KEY_ID`
 - `APPLE_API_ISSUER`
 
@@ -173,7 +178,7 @@ In `.github/workflows/build.yml`, on the macos-latest tag-build step inject:
 env:
   CSC_LINK: ${{ secrets.MAC_CERTS }}
   CSC_KEY_PASSWORD: ${{ secrets.MAC_CERTS_PASSWORD }}
-  APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+  APPLE_API_KEY: ${{ runner.temp }}/AuthKey_${{ secrets.APPLE_API_KEY_ID }}.p8
   APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
   APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
   GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -218,7 +223,7 @@ Before tagging v1 with macOS support:
 - Install from dmg, drag to `/Applications`, launch — no Gatekeeper warning.
 - `~/Documents/SciPaperTodo/` populates correctly on first run.
 - `safeStorage` persists API keys (verify via Keychain Access — entry named `SciPaper Todo` or similar).
-- Bundled MCP works from Claude Code using the recommended `node mcp-cli.cjs` config — 27 tools register, an article query returns data.
+- Bundled MCP works from Claude Code using the recommended `node mcp-cli.cjs` config — 68 tools register, an article query returns data.
 - docx export with an attached TIFF image (covers the `utif` path on darwin).
 - Cmd+Q quits, Cmd+W closes window but app stays running, dock-click reopens window.
 - Cmd+C/V/X/A/Z work in all input fields (validates Phase 1 menu template).

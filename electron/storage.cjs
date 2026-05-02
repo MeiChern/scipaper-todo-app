@@ -78,6 +78,8 @@ const DEFAULT_ITALIC_PROMPT =
   '\n- 基因符号(按物种约定:果蝇基因斜体小写如 *hsp70*;蛋白正体大写如 HSP70)' +
   '\n- 数学常量符号(*e* 自然常数,*i* 虚数,*x* 自变量等)' +
   '\n规则不必穷举,你应当依据学术英语规范主动识别并标注。中文写作中,这些专有术语在中文里也保持斜体英文形式(中文不变)。';
+const WINDOWS_IMPORT_RELINK_MESSAGE = 'This attachment was imported from Windows; please re-link it on this Mac.';
+const warnedWindowsImportPaths = new Set();
 
 function now() {
   return new Date().toISOString();
@@ -439,9 +441,36 @@ function windowsPathToCurrentPlatform(value) {
     return value;
   }
 
+  if (process.platform === 'darwin') {
+    warnWindowsImportPath(value);
+    return null;
+  }
+
   const drive = value[0].toLowerCase();
   const rest = value.slice(2).split(/[\\/]+/).filter(Boolean);
   return path.join('/mnt', drive, ...rest);
+}
+
+function warnWindowsImportPath(value) {
+  if (warnedWindowsImportPaths.has(value)) {
+    return;
+  }
+
+  warnedWindowsImportPaths.add(value);
+  console.warn(WINDOWS_IMPORT_RELINK_MESSAGE + ' Original path: ' + value);
+}
+
+function getAssetPathError(block) {
+  if (normalizeBlockType(block.type) === 'Text') {
+    return null;
+  }
+
+  if (process.platform === 'darwin' && isWindowsAbsolutePath(block.content)) {
+    warnWindowsImportPath(block.content);
+    return WINDOWS_IMPORT_RELINK_MESSAGE;
+  }
+
+  return null;
 }
 
 function createSection(type, orderIndex) {
@@ -781,11 +810,13 @@ function resolveBlockPath(articleId, block) {
 
 function enrichBlock(articleId, block) {
   const normalizedBlock = normalizeStoredBlock(block);
+  const assetError = getAssetPathError(normalizedBlock);
   const resolvedPath = resolveBlockPath(articleId, normalizedBlock);
   const stats = resolvedPath && fs.existsSync(resolvedPath) ? fs.statSync(resolvedPath) : null;
 
   return {
     ...normalizedBlock,
+    assetError,
     resolvedPath,
     previewUrl: resolvedPath ? pathToFileURL(resolvedPath).toString() : null,
     fileName: resolvedPath ? path.basename(resolvedPath) : null,
@@ -2069,6 +2100,12 @@ function getPreviewPayload(articleId, blockId) {
   const database = readDatabase();
   const article = findArticle(database, articleId);
   const { block } = findBlock(article, blockId);
+  const assetError = getAssetPathError(block);
+
+  if (assetError) {
+    throw new Error(assetError);
+  }
+
   const resolvedPath = resolveBlockPath(articleId, block);
 
   if (!resolvedPath || !fs.existsSync(resolvedPath)) {

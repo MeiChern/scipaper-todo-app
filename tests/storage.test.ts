@@ -69,9 +69,9 @@ describe('storage writing streaks', () => {
     const updatedBlock = firstBlock(storage, article.id)
 
     expect(updatedBlock?.content).toBe('one two three')
-    expect(state.writingStreak.todayWords).toBe(2)
+    expect(state.writingStreak.todayWords).toBe(3)
     expect(state.writingStreak.currentStreak).toBe(1)
-    expect(state.writingStreak.streakHistory[0]?.words).toBe(2)
+    expect(state.writingStreak.streakHistory[0]?.words).toBe(3)
   })
 
   it('repairs legacy partial writing streak records before updates', () => {
@@ -101,8 +101,8 @@ describe('storage writing streaks', () => {
 
     const state = storage.loadState()
     expect(state.writingStreak.dailyGoal).toBe(500)
-    expect(state.writingStreak.todayWords).toBe(1)
-    expect(state.writingStreak.streakHistory[0]?.words).toBe(1)
+    expect(state.writingStreak.todayWords).toBe(2)
+    expect(state.writingStreak.streakHistory[0]?.words).toBe(2)
   })
 })
 

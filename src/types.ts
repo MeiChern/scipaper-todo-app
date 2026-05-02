@@ -82,6 +82,7 @@ export interface ContentBlock {
   createdBy?: string
   updatedBy?: string
   versions: ContentBlockVersion[]
+  assetError?: string | null
   resolvedPath?: string | null
   previewUrl?: string | null
   fileName?: string | null

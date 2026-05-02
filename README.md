@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://github.com/1690834643/scipaper-todo-app/releases/latest"><img src="https://img.shields.io/github/v/release/1690834643/scipaper-todo-app?style=flat-square&color=2ea44f" alt="release"></a>
-  <a href="https://github.com/1690834643/scipaper-todo-app/releases/latest"><img src="https://img.shields.io/badge/platform-Windows%20x64-0078D6?style=flat-square" alt="platform"></a>
+  <a href="https://github.com/1690834643/scipaper-todo-app/releases/latest"><img src="https://img.shields.io/badge/platform-Windows%20x64%20%7C%20macOS-0078D6?style=flat-square" alt="platform"></a>
   <img src="https://img.shields.io/badge/electron-37-47848F?style=flat-square" alt="electron">
   <img src="https://img.shields.io/badge/react-19-61DAFB?style=flat-square" alt="react">
   <img src="https://img.shields.io/badge/MCP-stdio-F46036?style=flat-square" alt="mcp">
@@ -24,7 +24,7 @@
 
 ### 这是什么
 
-**SciPaper Todo** 是一款面向生命科学研究者的 Windows 桌面应用，把"写论文"当成一个软件工程项目来管理：
+**SciPaper Todo** 是一款面向生命科学研究者的桌面应用，把"写论文"当成一个软件工程项目来管理：
 
 - 一篇论文 = 一个仓库，按 IMRaD 结构组织（Title / Abstract / Introduction / Methods / Results / Discussion / References）
 - 数据本地，不上云；附件、版本、修改记录全部留在你机器上
@@ -37,7 +37,7 @@
 
 | 特色 | 说明 |
 |---|---|
-| 🧠 **MCP 双向协议** | 内置 stdio MCP server 暴露 27 个工具（22 本地 + 5 Zotero），任何兼容 MCP 的 AI 客户端都能查/写你的论文 |
+| 🧠 **MCP 双向协议** | 内置 stdio MCP server 暴露 68 个工具（本地写作、进展记录、导出、Zotero 等），任何兼容 MCP 的 AI 客户端都能查/写你的论文 |
 | 📚 **IMRaD 一等公民** | 创建论文先回答 4 个研究问题（科学问题 / 现象 / 假设 / 方案），自动生成七章节骨架；ContentBlock 支持文本 / 图片 / 文件链接，每次修改自动版本快照 |
 | 🤖 **内置 AI 助手 + 8 场景** | 右侧 Cmd+K Drawer，预置 Abstract / Introduction / Methods / Results / Discussion / Conclusion / Reply Reviewer / Distill 八个场景 prompt，可自定义；支持 OpenAI 与 Anthropic 双协议、思考模式（reasoning_content）流式渲染、工具调用 + 二次确认 |
 | 📝 **docx 三模板 + 拉丁斜体规范** | Times New Roman 通用学术 / 宋体 1.5 行距中文学位 / Arial 紧凑 Nature 风格三套模板；勾选"套斜体规范"即可让 LLM 在导出前按学术英语惯例自动给学名 / 拉丁短语 / 统计变量打斜体 |
@@ -50,14 +50,31 @@
 ### 安装与使用
 
 1. 到 [Releases](https://github.com/1690834643/scipaper-todo-app/releases/latest) 下载：
-   - **Setup**：标准 NSIS 安装包，会写入 Start Menu / 卸载条目
-   - **Portable**：单文件免安装版，双击即用
-2. 首次启动会在 `%USERPROFILE%\Documents\SciPaperTodo\` 创建数据目录
-3. 进 **Settings → AI Provider** 添加你的 LLM（DeepSeek V4 Flash / Pro 已内置预设，粘贴 API Key 即可）
-4. 进 **Settings → Zotero 接入**（可选）启用 Zotero 集成
-5. 进 **Settings → MCP 协议** 复制配置粘到 Cursor / Claude Code 即可在外部 AI 里读写论文
+   - **Windows Setup**：标准 NSIS 安装包，会写入 Start Menu / 卸载条目
+   - **Windows Portable**：单文件免安装版，双击即用
+   - **macOS DMG**：按芯片选择 `arm64` 或 `x64`，打开 dmg 后拖到 `/Applications`
+2. macOS Homebrew Cask（tap 发布后）：
+   ```sh
+   brew install --cask 1690834643/scipaper-todo/scipaper-todo
+   ```
+3. 首次启动会在 `~/Documents/SciPaperTodo/`（macOS / Linux）或 `%USERPROFILE%\Documents\SciPaperTodo\`（Windows）创建数据目录
+4. 进 **Settings → AI Provider** 添加你的 LLM（DeepSeek V4 Flash / Pro 已内置预设，粘贴 API Key 即可）
+5. 进 **Settings → Zotero 接入**（可选）启用 Zotero 集成
+6. 进 **Settings → MCP 协议** 复制配置粘到 Cursor / Claude Code 即可在外部 AI 里读写论文
+   - 🍎 **macOS MCP 推荐用 Node 跑打包内的 CLI**。这避开 `.app/Contents/MacOS/...` GUI 路径和空格兼容性问题，但要求系统里有 `node`：
+     ```json
+     {
+       "mcpServers": {
+         "scipaper-todo": {
+           "command": "node",
+           "args": ["/Applications/SciPaper Todo.app/Contents/Resources/app.asar.unpacked/electron/mcp-cli.cjs"],
+           "env": { "SCIPAPER_MCP_CLIENT": "Claude Code" }
+         }
+       }
+     }
+     ```
    - ⚠️ **Windows MCP 配置请用 Setup 版的 .exe**。Portable 版每次启动都会解压到 `%LOCALAPPDATA%\Temp\<随机 hash>\` 一个临时目录，关闭后通常被回收；MCP 配置写的临时路径下次启动就失效。要么用 NSIS Setup（路径固定），要么把 Portable .exe 自己拷到 `C:\Tools\SciPaperTodo\` 这种固定文件夹，MCP 配置指向那个稳定路径。
-   - 🐧 **WSL / Linux 用户用 Node 直接跑 MCP**：源码里有一个 `electron/mcp-cli.cjs` 是不带 Electron 壳的 stdio MCP 入口，启动 230 ms，66 个工具全部可用。把客户端 (Claude Code in WSL / Cursor in WSL) 的 MCP 配置改成：
+   - 🐧 **WSL / Linux 用户用 Node 直接跑 MCP**：源码里有一个 `electron/mcp-cli.cjs` 是不带 Electron 壳的 stdio MCP 入口。把客户端 (Claude Code in WSL / Cursor in WSL) 的 MCP 配置改成：
      ```json
      {
        "mcpServers": {
@@ -84,7 +101,8 @@
 ### 路径速查
 
 ```
-%USERPROFILE%\Documents\SciPaperTodo\
+~/Documents/SciPaperTodo/                  # macOS / Linux
+%USERPROFILE%\Documents\SciPaperTodo\      # Windows
 ├── database.json           # 主数据库（原子写入）
 ├── database.json.bak       # 5 分钟周期备份
 ├── Articles\
@@ -102,7 +120,7 @@
 
 ### 反馈与已知
 
-- 暂不支持 macOS / Linux 二进制（代码跨平台，需自编译）
+- macOS 构建已配置 dmg/zip；正式对外发布前需要 Developer ID 签名和 notarization，否则首次启动仍会遇到 Gatekeeper 提醒
 - 旧 `deepseek-chat` / `deepseek-reasoner` model id 已在 V4 文档里被标记为 legacy；预设直接给 `deepseek-v4-flash` / `deepseek-v4-pro`
 - WSL 下 safeStorage 拒保存 API Key（Windows 实机用 DPAPI 正常）；如遇此情况只在 Windows 跑
 - **Portable .exe 用作 MCP server 路径不稳定**：Windows portable NSIS 会把 .exe 自解压到 `%LOCALAPPDATA%\Temp\<随机 hash>\`，关闭后被清理，hash 每次启动可能变；任何外部 MCP 客户端把这个临时路径写死，下次连接就会找不到。要把 SciPaper Todo 当 MCP 服务器，请用 Setup 版（路径固定到安装目录），或把 Portable .exe 拷到自己常驻的固定文件夹再在 MCP 配置里指向那条路径。
@@ -113,7 +131,7 @@
 
 ### What is this
 
-**SciPaper Todo** is a Windows desktop app for life-science researchers that treats manuscript writing like a software project:
+**SciPaper Todo** is a desktop app for life-science researchers that treats manuscript writing like a software project:
 
 - One paper = one repository, organised by IMRaD (Title / Abstract / Introduction / Methods / Results / Discussion / References)
 - Local-first. Attachments, versions, edit history all stay on your machine
@@ -126,7 +144,7 @@
 
 | Feature | What it does |
 |---|---|
-| 🧠 **Bidirectional MCP** | Built-in stdio MCP server exposes 27 tools (22 local + 5 Zotero). Any MCP-compatible AI client can query and write to your manuscripts |
+| 🧠 **Bidirectional MCP** | Built-in stdio MCP server exposes 68 tools across local writing, progress logging, exports, Zotero, and more. Any MCP-compatible AI client can query and write to your manuscripts |
 | 📚 **IMRaD as a first-class citizen** | Creating a paper starts with 4 research questions (problem / phenomenon / hypothesis / approach) that auto-generate the 7-section skeleton. Content blocks support text / image / file link, with automatic version snapshots on every edit |
 | 🤖 **Built-in AI drawer + 8 scenarios** | Right-side Cmd+K drawer with preset prompts for Abstract / Introduction / Methods / Results / Discussion / Conclusion / Reply Reviewer / Distill, all customisable. OpenAI and Anthropic protocols, streaming `reasoning_content` for thinking-mode models, tool-calling with confirm-before-write |
 | 📝 **3 docx templates + Latin italic guide** | Times New Roman academic / SimSun 1.5-spacing thesis / Arial Nature-style. Tick "apply italic guide" and the exporter calls the LLM to mark italics on species names, Latin phrases, and statistical variables before writing the docx |
@@ -139,14 +157,31 @@
 ### Install
 
 1. Grab from [Releases](https://github.com/1690834643/scipaper-todo-app/releases/latest):
-   - **Setup**: standard NSIS installer with Start Menu and uninstall entry
-   - **Portable**: single-file binary, no install
-2. First launch creates `%USERPROFILE%\Documents\SciPaperTodo\`
-3. **Settings → AI Provider**: add your LLM (DeepSeek V4 Flash / Pro presets included, paste your API key)
-4. **Settings → Zotero** (optional): enable Zotero integration
-5. **Settings → MCP**: copy the config block into Cursor / Claude Code to give external AIs access
+   - **Windows Setup**: standard NSIS installer with Start Menu and uninstall entry
+   - **Windows Portable**: single-file binary, no install
+   - **macOS DMG**: choose `arm64` or `x64`, open the dmg, and drag the app to `/Applications`
+2. Homebrew Cask, once the tap is published:
+   ```sh
+   brew install --cask 1690834643/scipaper-todo/scipaper-todo
+   ```
+3. First launch creates `~/Documents/SciPaperTodo/` on macOS / Linux, or `%USERPROFILE%\Documents\SciPaperTodo\` on Windows
+4. **Settings → AI Provider**: add your LLM (DeepSeek V4 Flash / Pro presets included, paste your API key)
+5. **Settings → Zotero** (optional): enable Zotero integration
+6. **Settings → MCP**: copy the config block into Cursor / Claude Code to give external AIs access
+   - 🍎 **On macOS, run the packaged CLI with Node for MCP.** This avoids `.app/Contents/MacOS/...` GUI paths and spaces, but requires `node` on the system:
+     ```json
+     {
+       "mcpServers": {
+         "scipaper-todo": {
+           "command": "node",
+           "args": ["/Applications/SciPaper Todo.app/Contents/Resources/app.asar.unpacked/electron/mcp-cli.cjs"],
+           "env": { "SCIPAPER_MCP_CLIENT": "Claude Code" }
+         }
+       }
+     }
+     ```
    - ⚠️ **On Windows, use the Setup .exe for MCP integration, not Portable.** Portable launches by self-extracting to `%LOCALAPPDATA%\Temp\<random-hash>\` and the hash changes between runs; an MCP config pinned to that temp path breaks the next time you reopen the app. Either install via NSIS Setup (stable install path), or copy the Portable .exe into a fixed folder such as `C:\Tools\SciPaperTodo\` and point your MCP config there.
-   - 🐧 **WSL / Linux: skip the .exe bridge and run the MCP server natively via Node.** The repo ships `electron/mcp-cli.cjs`, an Electron-free stdio MCP entry. ~230 ms cold start, all 66 tools live. Point your WSL-side client at:
+   - 🐧 **WSL / Linux: skip the .exe bridge and run the MCP server natively via Node.** The repo ships `electron/mcp-cli.cjs`, an Electron-free stdio MCP entry. Point your WSL-side client at:
      ```json
      {
        "mcpServers": {
@@ -173,7 +208,8 @@
 ### Paths
 
 ```
-%USERPROFILE%\Documents\SciPaperTodo\
+~/Documents/SciPaperTodo/                  # macOS / Linux
+%USERPROFILE%\Documents\SciPaperTodo\      # Windows
 ├── database.json           # Main database (atomic writes)
 ├── database.json.bak       # Rolling 5-minute backup
 ├── Articles\
@@ -191,7 +227,7 @@
 
 ### Caveats
 
-- Windows x64 binaries only; the codebase is cross-platform, build from source for macOS / Linux
+- macOS dmg/zip packaging is configured; public releases need Developer ID signing and notarization before Gatekeeper warnings disappear
 - Legacy `deepseek-chat` / `deepseek-reasoner` model IDs are deprecated per DeepSeek docs; presets ship with `deepseek-v4-flash` / `deepseek-v4-pro`
 - safeStorage refuses to persist API keys under WSL; run the actual binary on Windows for full functionality
 - **Portable .exe is unstable as an MCP server target.** The Windows NSIS portable wrapper self-extracts to `%LOCALAPPDATA%\Temp\<random-hash>\`, gets cleaned up on close, and may pick a new hash on the next run. Any external MCP client config pinned to that path will fail next session. To use SciPaper Todo as an MCP server, install via Setup (stable path), or copy the Portable .exe into a fixed folder of your own and point the MCP config there.
