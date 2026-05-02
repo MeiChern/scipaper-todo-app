@@ -142,6 +142,15 @@ const READ_DISPATCH = {
   }),
   list_findings: (fn, args) => fn(args.articleId, args.sectionType),
   get_daily_session: (fn, args) => fn(args.date),
+  get_writing_streak: (fn) => fn().writingStreak,
+  get_mood_history: (fn) => fn(),
+  get_pomodoro_stats: (fn) => fn(),
+  get_writing_stats: (fn) => fn(),
+  get_theme: (fn) => fn(),
+  list_scenarios: (fn) => fn(),
+  get_italic_guide: (fn) => fn(),
+  get_zotero_config: (fn) => fn(),
+  get_auto_approve_tools: (fn) => fn(),
 };
 
 const WRITE_DISPATCH = {
@@ -180,6 +189,44 @@ const WRITE_DISPATCH = {
   end_daily_session: (fn, args) => fn(args.date, args.summaryText),
   add_pomodoro_session: (fn, args) => fn(args.duration, args.articleId || '', args.sectionType || ''),
   add_mood_entry: (fn, args) => fn(args.mood, args.note || ''),
+  update_daily_writing_goal: (fn, args) => fn(args.goal),
+  set_theme: (fn, args) => fn(args.theme),
+  set_auto_approve_tools: (fn, args) => fn(args.value),
+  add_scenario: (fn, args) => fn(args),
+  update_scenario: (fn, args) => fn(args.id, args.patch),
+  delete_scenario: (fn, args) => fn(args.id),
+  reset_scenario: (fn, args) => fn(args.id),
+  set_italic_guide: (fn, args) => fn(args),
+  set_zotero_config: (fn, args) => fn(args),
+  update_thesis_meta: (fn, args) => fn(args.thesisId, args.patch),
+  add_thesis_section: (fn, args) => fn(args.thesisId, args.sectionType, args.title),
+  unlink_article_from_thesis: (fn, args) => fn(args.thesisId, args.articleId),
+  export_article: async (_fn, args) => {
+    const { articleId, format } = args;
+    switch (format) {
+      case 'markdown':
+        return { format, path: storage.exportMarkdown(articleId) };
+      case 'html':
+        return { format, path: storage.exportToHTML(articleId) };
+      case 'json':
+        return { format, path: storage.exportToJSON(articleId) };
+      case 'share':
+        return { format, path: storage.createSharePackage(articleId) };
+      case 'docx': {
+        const { exportArticleDocx } = require('./docxExporter.cjs');
+        const out = await exportArticleDocx(articleId, args.docxTemplate || 'academic-en', {
+          applyItalicGuide: !!args.applyItalicGuide,
+        });
+        return { format, path: out };
+      }
+      case 'latex': {
+        const { exportArticleLatex } = require('./latexExporter.cjs');
+        return { format, path: exportArticleLatex(articleId) };
+      }
+      default:
+        throw new Error('unknown export format: ' + format);
+    }
+  },
 };
 
 function findTool(name) {
@@ -271,6 +318,14 @@ async function runTool(name, args) {
       return result && typeof result === 'object' && typeof result.ok === 'boolean' ? result : { ok: true, result };
     }
 
+    if (tool.storageCall === '__exporter__') {
+      const dispatch = WRITE_DISPATCH[name];
+      if (!dispatch) throw new Error('no router dispatch for tool: ' + name);
+
+      const result = await dispatch(null, input);
+      return result && typeof result === 'object' && typeof result.ok === 'boolean' ? result : { ok: true, result };
+    }
+
     const storageFn = storage[tool.storageCall];
     if (typeof storageFn !== 'function') throw new Error('storage function not found: ' + tool.storageCall);
 
@@ -330,6 +385,28 @@ function summarizeForApproval(name, args) {
     case 'list_pending_reviews': return '列出论文未完成审稿意见：' + input.articleId;
     case 'get_word_count': return input.articleId ? '统计论文 ' + input.articleId + ' 的字数' : '统计全局字数';
     case 'get_writing_guidance': return '获取论文 ' + input.articleId + ' 的 ' + input.targetSection + ' 写作建议';
+    case 'export_article': return '导出论文 ' + input.articleId + ' 为 ' + input.format + (input.docxTemplate ? '（模板：' + input.docxTemplate + '）' : '');
+    case 'get_writing_streak': return '读取写作 streak 状态';
+    case 'update_daily_writing_goal': return '设置每日写作字数目标：' + input.goal;
+    case 'get_mood_history': return '读取心情历史';
+    case 'get_pomodoro_stats': return '读取番茄钟统计';
+    case 'get_writing_stats': return '读取写作统计';
+    case 'get_theme': return '读取当前主题';
+    case 'set_theme': return '切换主题为：' + input.theme;
+    case 'get_auto_approve_tools': return '读取「AI 自动批准工具调用」开关';
+    case 'set_auto_approve_tools': return '设置「AI 自动批准工具调用」为：' + (input.value ? '开启' : '关闭');
+    case 'list_scenarios': return '列出写作场景预设';
+    case 'add_scenario': return '新增写作场景：' + (input.name || '');
+    case 'update_scenario': return '更新写作场景：' + input.id;
+    case 'delete_scenario': return '删除写作场景：' + input.id;
+    case 'reset_scenario': return '重置 builtin 写作场景：' + input.id;
+    case 'get_italic_guide': return '读取斜体规范配置';
+    case 'set_italic_guide': return '设置斜体规范' + (typeof input.enabled === 'boolean' ? '（enabled=' + input.enabled + '）' : '');
+    case 'get_zotero_config': return '读取 Zotero 配置';
+    case 'set_zotero_config': return '设置 Zotero 配置';
+    case 'update_thesis_meta': return '更新学位论文元信息：' + input.thesisId;
+    case 'add_thesis_section': return '为学位论文 ' + input.thesisId + ' 新增 section：' + input.sectionType;
+    case 'unlink_article_from_thesis': return '把论文 ' + input.articleId + ' 从学位论文 ' + input.thesisId + ' 解关联';
     default: return '执行工具调用：' + name;
   }
 }

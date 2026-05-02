@@ -1,4 +1,4 @@
-import { useState, type JSX } from 'react'
+import { useEffect, useState, type JSX } from 'react'
 import type {
   AppState,
   McpInfo,
@@ -44,9 +44,13 @@ interface SettingsViewProps {
   zoteroConfig: ZoteroConfig
   onUpdateZoteroConfig: (next: ZoteroConfig) => Promise<void>
   writingStats: WritingStatsType | null
+  autoApproveTools: boolean
+  onSetAutoApproveTools: (value: boolean) => Promise<void>
+  initialFocus?: SettingsModule | null
+  onFocusConsumed?: () => void
 }
 
-type SettingsModule = 'theme' | 'storage' | 'ai' | 'scenarios' | 'italic' | 'zotero' | 'mcp' | 'stats'
+export type SettingsModule = 'theme' | 'storage' | 'ai' | 'scenarios' | 'italic' | 'zotero' | 'mcp' | 'stats' | 'autoApprove'
 
 const MODULE_LABEL: Record<SettingsModule, string> = {
   theme: '主题',
@@ -57,10 +61,18 @@ const MODULE_LABEL: Record<SettingsModule, string> = {
   zotero: 'Zotero 接入',
   mcp: 'MCP 接入',
   stats: '写作统计',
+  autoApprove: 'AI 自动批准',
 }
 
 export function SettingsView(props: SettingsViewProps): JSX.Element {
   const [active, setActive] = useState<SettingsModule | null>(null)
+
+  useEffect(() => {
+    if (props.initialFocus) {
+      setActive(props.initialFocus)
+      props.onFocusConsumed?.()
+    }
+  }, [props.initialFocus])
 
   if (active) {
     return (
@@ -140,6 +152,34 @@ export function SettingsView(props: SettingsViewProps): JSX.Element {
           {active === 'mcp' && <McpPanel info={props.mcpInfo} />}
 
           {active === 'stats' && props.writingStats && <WritingStats stats={props.writingStats} />}
+
+          {active === 'autoApprove' && (
+            <section className="panel-card">
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">AI safety</p>
+                  <h3>自动批准工具调用</h3>
+                </div>
+              </div>
+              <div className="plain-list">
+                <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={props.autoApproveTools}
+                    onChange={(e) => props.onSetAutoApproveTools(e.target.checked)}
+                  />
+                  <span>开启后，内置 AI 调用任何写入类工具（创建文章、改正文、记心情、导出 ...）都不再弹批准对话框，直接执行。</span>
+                </label>
+                <p className="muted-text">
+                  ⚠️ 关闭是默认值。开启意味着把决策权完全交给 AI，请只在自己稳定可控的工作流里使用。
+                  外部 MCP 客户端（Claude Code / Cursor）的批准是它们自己的事，跟这个开关无关。
+                </p>
+                <p className="muted-text" style={{ marginTop: 'var(--sp-2)' }}>
+                  当前状态：<strong>{props.autoApproveTools ? '已开启（自动批准）' : '已关闭（每次确认）'}</strong>
+                </p>
+              </div>
+            </section>
+          )}
         </section>
       </div>
     )
@@ -221,6 +261,13 @@ export function SettingsView(props: SettingsViewProps): JSX.Element {
           <p className="module-card-status">
             {props.writingStats?.totalArticles ?? 0} 篇 · {props.writingStats?.totalWords?.toLocaleString() ?? 0} 字
           </p>
+        </button>
+
+        <button className="module-card" onClick={() => setActive('autoApprove')} type="button">
+          <span className="module-card-icon">✓</span>
+          <h3 className="module-card-title">AI 自动批准</h3>
+          <p className="module-card-desc">内置 AI 写入工具的批准开关</p>
+          <p className="module-card-status">{props.autoApproveTools ? '自动批准（开）' : '每次确认（默认）'}</p>
         </button>
       </div>
     </div>

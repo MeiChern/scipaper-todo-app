@@ -228,42 +228,25 @@ const TOOLS = [
   {
     name: 'create_article',
     description:
-      '创建新的论文项目，用于用户要开始整理一篇新稿件或把新的研究主题纳入待办系统时。可同时写入目标期刊和初始研究上下文，属于写入操作，调用前需要用户确认。',
+      '创建新的论文项目，用于用户要开始整理一篇新稿件或把新的研究主题纳入待办系统时。可同时写入目标期刊、初始状态、研究上下文（科学问题/现象/假设/方案），属于写入操作。',
     isWrite: true,
     parameters: {
       type: 'object',
       properties: {
-        title: {
-          type: 'string',
-          description: '论文标题。',
-        },
-        targetJournal: {
-          type: 'string',
-          description: '目标期刊，可为空。',
-        },
-        initialContext: {
+        title: { type: 'string', description: '论文标题。' },
+        targetJournal: { type: 'string', description: '目标期刊，可为空。' },
+        status: { type: 'string', enum: ARTICLE_STATUS_ENUM, description: '初始状态，默认 Drafting。' },
+        researchContext: {
           type: 'object',
           properties: {
-            background: {
-              type: 'string',
-              description: '研究背景。',
-            },
-            hypothesis: {
-              type: 'string',
-              description: '研究假设。',
-            },
-            objectives: {
-              type: 'string',
-              description: '研究目标。',
-            },
-            keyMethods: {
-              type: 'string',
-              description: '关键方法。',
-            },
+            scientificQuestion: { type: 'string', description: '科学问题。' },
+            observedPhenomenon: { type: 'string', description: '观察到的现象。' },
+            hypothesis: { type: 'string', description: '研究假设。' },
+            approach: { type: 'string', description: '研究方案 / 关键方法。' },
           },
           required: [],
           additionalProperties: false,
-          description: '创建文章时一并记录的初始研究上下文。',
+          description: '初始研究上下文（与 storage 字段一一对应）。',
         },
       },
       required: ['title'],
@@ -1194,6 +1177,273 @@ const TOOLS = [
       additionalProperties: false,
     },
     storageCall: 'addMoodEntry',
+  },
+  {
+    name: 'export_article',
+    description:
+      '把论文导出成指定格式：markdown / docx / latex / html / json / share。导出文件落在 Articles/<id>/Exports/ 下，返回完整路径。docx 可选 docxTemplate（academic-en / thesis-zh / nature）和 applyItalicGuide（导出前调 LLM 套用学名/拉丁斜体规范，更慢更贵）。share 把文章打包成可分享的目录（含正文、figure、bib）。',
+    isWrite: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        articleId: { type: 'string', description: '要导出的论文 id。' },
+        format: {
+          type: 'string',
+          enum: ['markdown', 'docx', 'latex', 'html', 'json', 'share'],
+          description: '导出格式。',
+        },
+        docxTemplate: {
+          type: 'string',
+          enum: ['academic-en', 'thesis-zh', 'nature'],
+          description: '仅 format=docx 时有意义。',
+        },
+        applyItalicGuide: {
+          type: 'boolean',
+          description: '仅 format=docx 时有意义。导出前调 LLM 套用学名/拉丁斜体规范。',
+        },
+      },
+      required: ['articleId', 'format'],
+      additionalProperties: false,
+    },
+    storageCall: '__exporter__',
+  },
+  {
+    name: 'get_writing_streak',
+    description: '读取写作 streak 状态（连续天数、最长 streak、今日字数、daily goal、history）。',
+    isWrite: false,
+    parameters: { type: 'object', properties: {}, required: [], additionalProperties: false },
+    storageCall: 'loadState',
+  },
+  {
+    name: 'update_daily_writing_goal',
+    description: '设置每日写作字数目标（goal，正整数，单位字）。',
+    isWrite: true,
+    parameters: {
+      type: 'object',
+      properties: { goal: { type: 'number', description: '每日字数目标，>0' } },
+      required: ['goal'],
+      additionalProperties: false,
+    },
+    storageCall: 'updateDailyGoal',
+  },
+  {
+    name: 'get_mood_history',
+    description: '读取心情历史（按日期倒序）。',
+    isWrite: false,
+    parameters: { type: 'object', properties: {}, required: [], additionalProperties: false },
+    storageCall: 'getMoodHistory',
+  },
+  {
+    name: 'get_pomodoro_stats',
+    description: '读取番茄钟统计（今日 / 历史）。',
+    isWrite: false,
+    parameters: { type: 'object', properties: {}, required: [], additionalProperties: false },
+    storageCall: 'getPomodoroStats',
+  },
+  {
+    name: 'get_writing_stats',
+    description: '读取写作统计（按论文 / 按天 / 按时段的字数与活动）。',
+    isWrite: false,
+    parameters: { type: 'object', properties: {}, required: [], additionalProperties: false },
+    storageCall: 'getWritingStats',
+  },
+  {
+    name: 'get_theme',
+    description: '读取当前主题。可选三种之一：claude / pixel / fresh。',
+    isWrite: false,
+    parameters: { type: 'object', properties: {}, required: [], additionalProperties: false },
+    storageCall: 'getTheme',
+  },
+  {
+    name: 'set_theme',
+    description: '切换主题。仅支持 claude / pixel / fresh 三种。',
+    isWrite: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        theme: { type: 'string', enum: ['claude', 'pixel', 'fresh'], description: '主题名。' },
+      },
+      required: ['theme'],
+      additionalProperties: false,
+    },
+    storageCall: 'setTheme',
+  },
+  {
+    name: 'get_auto_approve_tools',
+    description: '读取「内置 AI 自动批准所有工具调用」开关当前值。',
+    isWrite: false,
+    parameters: { type: 'object', properties: {}, required: [], additionalProperties: false },
+    storageCall: 'getAutoApproveTools',
+  },
+  {
+    name: 'set_auto_approve_tools',
+    description: '设置「内置 AI 自动批准所有工具调用」开关。开启后写入类工具不再弹出 approve 对话框，AI 会直接执行。',
+    isWrite: true,
+    parameters: {
+      type: 'object',
+      properties: { value: { type: 'boolean', description: 'true 开启自动批准，false 关闭。' } },
+      required: ['value'],
+      additionalProperties: false,
+    },
+    storageCall: 'setAutoApproveTools',
+  },
+  {
+    name: 'list_scenarios',
+    description: '列出所有写作场景预设（含 builtin 与用户自定义）。',
+    isWrite: false,
+    parameters: { type: 'object', properties: {}, required: [], additionalProperties: false },
+    storageCall: 'listWritingScenarios',
+  },
+  {
+    name: 'add_scenario',
+    description: '新增一个用户自定义写作场景。至少包含 name 与 systemPromptAddon。',
+    isWrite: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        description: { type: 'string' },
+        systemPromptAddon: { type: 'string', description: '该场景注入到 system prompt 的额外指令。' },
+        enabled: { type: 'boolean' },
+      },
+      required: ['name', 'systemPromptAddon'],
+      additionalProperties: true,
+    },
+    storageCall: 'addWritingScenario',
+  },
+  {
+    name: 'update_scenario',
+    description: '更新写作场景。builtin 场景只允许改 systemPromptAddon。',
+    isWrite: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        id: { type: 'string' },
+        patch: { type: 'object', description: '要更新的字段；builtin 场景只接受 { systemPromptAddon }' },
+      },
+      required: ['id', 'patch'],
+      additionalProperties: false,
+    },
+    storageCall: 'updateWritingScenario',
+  },
+  {
+    name: 'delete_scenario',
+    description: '删除一个用户自定义场景（builtin 不允许）。',
+    isWrite: true,
+    parameters: {
+      type: 'object',
+      properties: { id: { type: 'string' } },
+      required: ['id'],
+      additionalProperties: false,
+    },
+    storageCall: 'deleteWritingScenario',
+  },
+  {
+    name: 'reset_scenario',
+    description: '把 builtin 场景重置回默认 systemPromptAddon（用户改坏后回滚）。',
+    isWrite: true,
+    parameters: {
+      type: 'object',
+      properties: { id: { type: 'string' } },
+      required: ['id'],
+      additionalProperties: false,
+    },
+    storageCall: 'resetWritingScenarioToDefault',
+  },
+  {
+    name: 'get_italic_guide',
+    description: '读取 latin / 学名斜体规范配置（enabled + prompt）。',
+    isWrite: false,
+    parameters: { type: 'object', properties: {}, required: [], additionalProperties: false },
+    storageCall: 'getItalicGuide',
+  },
+  {
+    name: 'set_italic_guide',
+    description: '设置 latin / 学名斜体规范。可只传 enabled 或 prompt 任一字段，未传字段保持原值。',
+    isWrite: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        enabled: { type: 'boolean', description: 'docx 导出时是否调 LLM 自动套斜体。' },
+        prompt: { type: 'string', description: '套斜体时给 LLM 的规范 prompt。' },
+      },
+      required: [],
+      additionalProperties: false,
+    },
+    storageCall: 'setItalicGuide',
+  },
+  {
+    name: 'get_zotero_config',
+    description: '读取 Zotero 集成配置（apiKey 在结果里会保留，调用方需注意）。',
+    isWrite: false,
+    parameters: { type: 'object', properties: {}, required: [], additionalProperties: false },
+    storageCall: 'getZoteroConfig',
+  },
+  {
+    name: 'set_zotero_config',
+    description: '设置 Zotero 集成配置。把要更新的字段传进 config 对象。',
+    isWrite: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        apiKey: { type: 'string' },
+        userId: { type: 'string' },
+        baseUrl: { type: 'string' },
+        libraryType: { type: 'string', enum: ['user', 'group'] },
+      },
+      required: [],
+      additionalProperties: true,
+    },
+    storageCall: 'setZoteroConfig',
+  },
+  {
+    name: 'update_thesis_meta',
+    description: '更新学位论文元信息（title / status / 等）。',
+    isWrite: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        thesisId: { type: 'string' },
+        patch: { type: 'object', description: '要更新的元信息字段。' },
+      },
+      required: ['thesisId', 'patch'],
+      additionalProperties: false,
+    },
+    storageCall: 'updateThesisMeta',
+  },
+  {
+    name: 'add_thesis_section',
+    description: '在学位论文中新增一个 section。sectionType 必须是 storage 端的固定 enum 之一。',
+    isWrite: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        thesisId: { type: 'string' },
+        sectionType: {
+          type: 'string',
+          enum: ['Cover', 'Declaration', 'Abstract', 'Acknowledgements', 'TableOfContents', 'ListOfFigures', 'ListOfTables', 'Chapter', 'Conclusion', 'References', 'Appendix'],
+        },
+        title: { type: 'string' },
+      },
+      required: ['thesisId', 'sectionType', 'title'],
+      additionalProperties: false,
+    },
+    storageCall: 'addThesisSection',
+  },
+  {
+    name: 'unlink_article_from_thesis',
+    description: '从学位论文中解除一篇文章的关联（不会删除文章本身）。',
+    isWrite: true,
+    parameters: {
+      type: 'object',
+      properties: {
+        thesisId: { type: 'string' },
+        articleId: { type: 'string' },
+      },
+      required: ['thesisId', 'articleId'],
+      additionalProperties: false,
+    },
+    storageCall: 'unlinkArticleFromThesis',
   },
 ];
 

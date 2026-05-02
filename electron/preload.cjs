@@ -101,6 +101,10 @@ contextBridge.exposeInMainWorld('scipaper', {
   getItalicGuide: () => ipcRenderer.invoke('italic:get'),
   setItalicGuide: (config) => ipcRenderer.invoke('italic:set', { config }),
 
+  // Auto-approve tool calls
+  getAutoApproveTools: () => ipcRenderer.invoke('autoApprove:get'),
+  setAutoApproveTools: (value) => ipcRenderer.invoke('autoApprove:set', { value }),
+
   // Zotero
   getZoteroConfig: () => ipcRenderer.invoke('zotero:getConfig'),
   setZoteroConfig: (config) => ipcRenderer.invoke('zotero:setConfig', { config }),

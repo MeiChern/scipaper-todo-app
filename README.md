@@ -56,6 +56,20 @@
 3. 进 **Settings → AI Provider** 添加你的 LLM（DeepSeek V4 Flash / Pro 已内置预设，粘贴 API Key 即可）
 4. 进 **Settings → Zotero 接入**（可选）启用 Zotero 集成
 5. 进 **Settings → MCP 协议** 复制配置粘到 Cursor / Claude Code 即可在外部 AI 里读写论文
+   - ⚠️ **Windows MCP 配置请用 Setup 版的 .exe**。Portable 版每次启动都会解压到 `%LOCALAPPDATA%\Temp\<随机 hash>\` 一个临时目录，关闭后通常被回收；MCP 配置写的临时路径下次启动就失效。要么用 NSIS Setup（路径固定），要么把 Portable .exe 自己拷到 `C:\Tools\SciPaperTodo\` 这种固定文件夹，MCP 配置指向那个稳定路径。
+   - 🐧 **WSL / Linux 用户用 Node 直接跑 MCP**：源码里有一个 `electron/mcp-cli.cjs` 是不带 Electron 壳的 stdio MCP 入口，启动 230 ms，66 个工具全部可用。把客户端 (Claude Code in WSL / Cursor in WSL) 的 MCP 配置改成：
+     ```json
+     {
+       "mcpServers": {
+         "scipaper-todo": {
+           "command": "node",
+           "args": ["/home/<you>/path/to/scipaper-todo/electron/mcp-cli.cjs"],
+           "env": { "HOME": "/mnt/c/Users/<your-windows-user>" }
+         }
+       }
+     }
+     ```
+     `HOME` 这一行是关键——MCP server 默认从 `$HOME/Documents/SciPaperTodo/database.json` 读数据；指到 Windows 用户目录后，WSL 端的 MCP 跟 Windows 桌面应用读同一份数据库。两端写入是用 sentinel-file 锁保护的（`database.json.lock`，O_CREAT\|O_EXCL；超过 30 s 自动清理），同时写不会导致互覆盖——失败的那一方会拿到清晰的"被锁住，请重试"错误。不需要 Windows .exe 桥接。
 
 ### 技术栈
 
@@ -91,6 +105,7 @@
 - 暂不支持 macOS / Linux 二进制（代码跨平台，需自编译）
 - 旧 `deepseek-chat` / `deepseek-reasoner` model id 已在 V4 文档里被标记为 legacy；预设直接给 `deepseek-v4-flash` / `deepseek-v4-pro`
 - WSL 下 safeStorage 拒保存 API Key（Windows 实机用 DPAPI 正常）；如遇此情况只在 Windows 跑
+- **Portable .exe 用作 MCP server 路径不稳定**：Windows portable NSIS 会把 .exe 自解压到 `%LOCALAPPDATA%\Temp\<随机 hash>\`，关闭后被清理，hash 每次启动可能变；任何外部 MCP 客户端把这个临时路径写死，下次连接就会找不到。要把 SciPaper Todo 当 MCP 服务器，请用 Setup 版（路径固定到安装目录），或把 Portable .exe 拷到自己常驻的固定文件夹再在 MCP 配置里指向那条路径。
 
 ---
 
@@ -130,6 +145,20 @@
 3. **Settings → AI Provider**: add your LLM (DeepSeek V4 Flash / Pro presets included, paste your API key)
 4. **Settings → Zotero** (optional): enable Zotero integration
 5. **Settings → MCP**: copy the config block into Cursor / Claude Code to give external AIs access
+   - ⚠️ **On Windows, use the Setup .exe for MCP integration, not Portable.** Portable launches by self-extracting to `%LOCALAPPDATA%\Temp\<random-hash>\` and the hash changes between runs; an MCP config pinned to that temp path breaks the next time you reopen the app. Either install via NSIS Setup (stable install path), or copy the Portable .exe into a fixed folder such as `C:\Tools\SciPaperTodo\` and point your MCP config there.
+   - 🐧 **WSL / Linux: skip the .exe bridge and run the MCP server natively via Node.** The repo ships `electron/mcp-cli.cjs`, an Electron-free stdio MCP entry. ~230 ms cold start, all 66 tools live. Point your WSL-side client at:
+     ```json
+     {
+       "mcpServers": {
+         "scipaper-todo": {
+           "command": "node",
+           "args": ["/home/<you>/path/to/scipaper-todo/electron/mcp-cli.cjs"],
+           "env": { "HOME": "/mnt/c/Users/<your-windows-user>" }
+         }
+       }
+     }
+     ```
+     The `HOME` override is what makes the WSL-side MCP read the same `Documents/SciPaperTodo/database.json` your Windows GUI writes. Concurrent writes are guarded by a sentinel-file lock (`database.json.lock`, `O_CREAT|O_EXCL`, auto-reclaimed after 30 s of staleness): the loser of a race gets a clear "DB is locked, retry" error rather than a silent overwrite. No `.exe` is involved on this path.
 
 ### Stack
 
@@ -165,3 +194,4 @@
 - Windows x64 binaries only; the codebase is cross-platform, build from source for macOS / Linux
 - Legacy `deepseek-chat` / `deepseek-reasoner` model IDs are deprecated per DeepSeek docs; presets ship with `deepseek-v4-flash` / `deepseek-v4-pro`
 - safeStorage refuses to persist API keys under WSL; run the actual binary on Windows for full functionality
+- **Portable .exe is unstable as an MCP server target.** The Windows NSIS portable wrapper self-extracts to `%LOCALAPPDATA%\Temp\<random-hash>\`, gets cleaned up on close, and may pick a new hash on the next run. Any external MCP client config pinned to that path will fail next session. To use SciPaper Todo as an MCP server, install via Setup (stable path), or copy the Portable .exe into a fixed folder of your own and point the MCP config there.

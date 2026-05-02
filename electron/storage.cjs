@@ -127,20 +127,58 @@ function readDatabase() {
 let lastBackupAt = 0;
 const BACKUP_INTERVAL_MS = 5 * 60 * 1000;
 
+// Inter-process write guard for the GUI ↔ WSL MCP scenario. Sentinel-file lock:
+// a writer creates `database.json.lock` (O_CREAT|O_EXCL); a concurrent writer
+// sees it and aborts. Stale locks (>30s) are reclaimed; both writers crash-safe
+// because the .tmp + rename atomic write is unchanged.
+const STALE_LOCK_MS = 30_000;
+
+function acquireWriteLock() {
+  const lockPath = DATABASE_PATH + '.lock';
+  try {
+    return { fd: fs.openSync(lockPath, 'wx'), path: lockPath };
+  } catch (err) {
+    if (err.code !== 'EEXIST') throw err;
+    let stat = null;
+    try { stat = fs.statSync(lockPath); } catch {}
+    if (stat && Date.now() - stat.mtimeMs > STALE_LOCK_MS) {
+      try { fs.unlinkSync(lockPath); } catch {}
+      return { fd: fs.openSync(lockPath, 'wx'), path: lockPath };
+    }
+    const ageMs = stat ? Date.now() - stat.mtimeMs : -1;
+    throw new Error(
+      'database is locked by another writer (' + lockPath + ', age ' + ageMs + 'ms). ' +
+      'Close the other SciPaper Todo writer (GUI app or WSL MCP) and retry. ' +
+      'If stuck, delete the .lock file manually.',
+    );
+  }
+}
+
+function releaseWriteLock(lock) {
+  if (!lock) return;
+  try { fs.closeSync(lock.fd); } catch {}
+  try { fs.unlinkSync(lock.path); } catch {}
+}
+
 function writeDatabase(data) {
   ensureStore();
   const json = JSON.stringify(normalizeStoredDatabase(data), null, 2);
   const tmpPath = DATABASE_PATH + '.tmp';
-  fs.writeFileSync(tmpPath, json, 'utf-8');
-  // Snapshot last good copy at most every BACKUP_INTERVAL_MS
-  if (fs.existsSync(DATABASE_PATH) && Date.now() - lastBackupAt > BACKUP_INTERVAL_MS) {
-    try {
-      fs.copyFileSync(DATABASE_PATH, DATABASE_PATH + '.bak');
-      lastBackupAt = Date.now();
-    } catch {}
+  const lock = acquireWriteLock();
+  try {
+    fs.writeFileSync(tmpPath, json, 'utf-8');
+    // Snapshot last good copy at most every BACKUP_INTERVAL_MS
+    if (fs.existsSync(DATABASE_PATH) && Date.now() - lastBackupAt > BACKUP_INTERVAL_MS) {
+      try {
+        fs.copyFileSync(DATABASE_PATH, DATABASE_PATH + '.bak');
+        lastBackupAt = Date.now();
+      } catch {}
+    }
+    // Atomic on POSIX; Node fs.renameSync replaces target on Windows too
+    fs.renameSync(tmpPath, DATABASE_PATH);
+  } finally {
+    releaseWriteLock(lock);
   }
-  // Atomic on POSIX; Node fs.renameSync replaces target on Windows too
-  fs.renameSync(tmpPath, DATABASE_PATH);
 }
 
 function createArticleFolder(articleId) {
@@ -376,7 +414,7 @@ function normalizeStoredDatabase(data) {
     })),
     writingStreak: normalizeWritingStreak(data.writingStreak),
     pomodoroSessions: data.pomodoroSessions ?? [],
-    theme: data.theme ?? 'light',
+    theme: data.theme ?? 'claude',
     llmProviders: normalizeLlmProviders(data.llmProviders),
     activeLlmProviderId: typeof data.activeLlmProviderId === 'string' ? data.activeLlmProviderId : null,
     writingScenarios: normalizeWritingScenarios(data.writingScenarios),
@@ -384,6 +422,7 @@ function normalizeStoredDatabase(data) {
     zoteroConfig: normalizeZoteroConfig(data.zoteroConfig),
     progressEntries: Array.isArray(data.progressEntries) ? data.progressEntries.map(normalizeProgressEntry) : [],
     dailySessions: Array.isArray(data.dailySessions) ? data.dailySessions.map(normalizeDailySession) : [],
+    autoApproveTools: typeof data.autoApproveTools === 'boolean' ? data.autoApproveTools : false,
   };
 }
 
@@ -850,16 +889,33 @@ function getPomodoroStats() {
   };
 }
 
+const SUPPORTED_THEMES = ['claude', 'pixel', 'fresh'];
+
 function getTheme() {
   const database = readDatabase();
-  return database.theme || 'light';
+  return database.theme || 'claude';
 }
 
 function setTheme(theme) {
+  if (!SUPPORTED_THEMES.includes(theme)) {
+    throw new Error('Invalid theme: ' + theme + '. Supported: ' + SUPPORTED_THEMES.join(' / '));
+  }
   const database = readDatabase();
   database.theme = theme;
   writeDatabase(database);
   return database;
+}
+
+function getAutoApproveTools() {
+  const database = readDatabase();
+  return Boolean(database.autoApproveTools);
+}
+
+function setAutoApproveTools(value) {
+  const database = readDatabase();
+  database.autoApproveTools = Boolean(value);
+  writeDatabase(database);
+  return database.autoApproveTools;
 }
 
 function listProviders() {
@@ -2330,4 +2386,7 @@ module.exports = {
   exportToHTML,
   exportToJSON,
   createSharePackage,
+  SUPPORTED_THEMES,
+  getAutoApproveTools,
+  setAutoApproveTools,
 };

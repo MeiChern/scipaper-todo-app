@@ -189,6 +189,10 @@ declare global {
       getZoteroConfig: () => Promise<ZoteroConfig>
       setZoteroConfig: (config: ZoteroConfig) => Promise<ZoteroConfig>
 
+      // Auto-approve tool calls
+      getAutoApproveTools: () => Promise<boolean>
+      setAutoApproveTools: (value: boolean) => Promise<boolean>
+
       // Progress entries / Findings / Daily session
       addProgressEntry: (payload: {
         articleId: string

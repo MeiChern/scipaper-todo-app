@@ -49,6 +49,8 @@ const {
   setItalicGuide,
   getZoteroConfig,
   setZoteroConfig,
+  getAutoApproveTools,
+  setAutoApproveTools,
   addProgressEntry,
   updateProgressEntry,
   deleteProgressEntry,
@@ -551,6 +553,8 @@ function registerIpc() {
   ipcMain.handle('italic:set', (_, { config }) => setItalicGuide(config));
   ipcMain.handle('zotero:getConfig', () => getZoteroConfig());
   ipcMain.handle('zotero:setConfig', (_, { config }) => setZoteroConfig(config));
+  ipcMain.handle('autoApprove:get', () => getAutoApproveTools());
+  ipcMain.handle('autoApprove:set', (_, { value }) => setAutoApproveTools(value));
 
   // Progress entries / Findings / Daily session
   ipcMain.handle(

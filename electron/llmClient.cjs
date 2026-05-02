@@ -261,7 +261,9 @@ async function executeToolCall(state, sessionId, toolCall, mainWindow, abortSign
     return { callId, ok: false, result };
   }
   throwIfAborted(abortSignal);
-  if (definition.isWrite && !state.alwaysAllow.has(name)) {
+  let autoApproveAll = false;
+  try { autoApproveAll = Boolean(getStorage().getAutoApproveTools && getStorage().getAutoApproveTools()); } catch {}
+  if (definition.isWrite && !autoApproveAll && !state.alwaysAllow.has(name)) {
     const decision = await waitForApproval(state, sessionId, callId, name, summary, args, mainWindow);
     state.approvalPromises.delete(callId);
     throwIfAborted(abortSignal);
@@ -271,6 +273,8 @@ async function executeToolCall(state, sessionId, toolCall, mainWindow, abortSign
       return { callId, ok: false, result };
     }
     if (decision.alwaysAllow) state.alwaysAllow.add(name);
+  } else if (definition.isWrite && autoApproveAll) {
+    sendToolEvent(mainWindow, { sessionId, kind: 'autoApproved', callId, toolName: name, summary, argsJson, args });
   }
   const response = await runTool(name, args);
   const ok = Boolean(response?.ok);

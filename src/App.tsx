@@ -116,6 +116,12 @@ function App() {
     enabled: false,
   })
 
+  // Auto-approve all in-app AI tool calls
+  const [autoApproveTools, setAutoApproveToolsState] = useState(false)
+
+  // Pending Settings module focus (e.g. AI panel jumps to "AI Provider" submodule)
+  const [pendingSettingsFocus, setPendingSettingsFocus] = useState<import('./components/SettingsView').SettingsModule | null>(null)
+
   // docx export template
   const [docxTemplate, setDocxTemplate] = useState<string>('academic-en')
   const [docxApplyItalic, setDocxApplyItalic] = useState(false)
@@ -276,15 +282,17 @@ function App() {
     refreshScenarios().catch((error) => console.error(error))
   }, [])
 
-  // Load italic guide & zotero config on mount
+  // Load italic guide, zotero config, auto-approve flag on mount
   useEffect(() => {
     Promise.all([
       window.scipaper.getItalicGuide(),
       window.scipaper.getZoteroConfig(),
+      window.scipaper.getAutoApproveTools(),
     ])
-      .then(([italic, zotero]) => {
+      .then(([italic, zotero, autoApprove]) => {
         setItalicGuide(italic)
         setZoteroConfig(zotero)
+        setAutoApproveToolsState(Boolean(autoApprove))
       })
       .catch((error) => console.error(error))
   }, [])
@@ -853,6 +861,7 @@ function App() {
         }
         onOpenSettings={() => {
           setAiOpen(false)
+          setPendingSettingsFocus('ai')
           setRoute('settings')
         }}
         scenarios={scenarios.filter((s) => s.enabled)}
@@ -984,6 +993,13 @@ function App() {
               zoteroConfig={zoteroConfig}
               onUpdateZoteroConfig={handleUpdateZoteroConfig}
               writingStats={writingStats}
+              autoApproveTools={autoApproveTools}
+              onSetAutoApproveTools={async (value) => {
+                const saved = await window.scipaper.setAutoApproveTools(value)
+                setAutoApproveToolsState(Boolean(saved))
+              }}
+              initialFocus={pendingSettingsFocus}
+              onFocusConsumed={() => setPendingSettingsFocus(null)}
             />
           ) : null}
 
