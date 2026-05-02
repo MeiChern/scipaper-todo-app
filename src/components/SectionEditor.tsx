@@ -582,10 +582,10 @@ export function SectionEditor({
                   <button className="ghost-button" onClick={() => onDeleteBlock(block.id)} type="button">
                     删除
                   </button>
-                  <button className="ghost-button" onClick={() => handlePreview(block)} type="button">
+                  <button className="ghost-button" disabled={Boolean(block.assetError)} onClick={() => handlePreview(block)} type="button">
                     预览
                   </button>
-                  <button className="primary-button" onClick={() => onOpenAsset(block.id)} type="button">
+                  <button className="primary-button" disabled={Boolean(block.assetError)} onClick={() => onOpenAsset(block.id)} type="button">
                     打开
                   </button>
                 </div>
@@ -598,6 +598,7 @@ export function SectionEditor({
               <div className="asset-meta">
                 <p>{block.description}</p>
                 <p>{formatFileSize(block.fileSize)}</p>
+                {block.assetError ? <p>{block.assetError}</p> : null}
                 <p>{block.resolvedPath || '文件不存在'}</p>
               </div>
             </article>

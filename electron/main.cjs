@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, Menu, shell } = require('electron');
 const {
   addAssetBlock,
   addReviewComment,
@@ -65,7 +65,6 @@ const {
   endDailySession,
   getDailySession,
 } = require('./storage.cjs');
-const { startMcpServer } = require('./mcp-server.cjs');
 const {
   listProviders,
   addProvider: addProviderStorage,
@@ -73,42 +72,87 @@ const {
   deleteProvider: deleteProviderStorage,
   setActiveProvider: setActiveProviderStorage,
 } = require('./storage.cjs');
-const llmKeyStore = require('./llmKeyStore.cjs');
-const llmClient = require('./llmClient.cjs');
-const { exportArticleDocx } = require('./docxExporter.cjs');
-const { exportArticleLatex } = require('./latexExporter.cjs');
 
 const isDev = Boolean(process.env.VITE_DEV_SERVER_URL);
 const isMcpMode = process.argv.includes('--mcp-server');
+const isMac = process.platform === 'darwin';
+
+let mcpServerModule;
+let llmKeyStoreModule;
+let llmClientModule;
+let docxExporterModule;
+let latexExporterModule;
+
+function getMcpServer() {
+  mcpServerModule = mcpServerModule || require('./mcp-server.cjs');
+  return mcpServerModule;
+}
+
+function getLlmKeyStore() {
+  llmKeyStoreModule = llmKeyStoreModule || require('./llmKeyStore.cjs');
+  return llmKeyStoreModule;
+}
+
+function getLlmClient() {
+  llmClientModule = llmClientModule || require('./llmClient.cjs');
+  return llmClientModule;
+}
+
+function getDocxExporter() {
+  docxExporterModule = docxExporterModule || require('./docxExporter.cjs');
+  return docxExporterModule;
+}
+
+function getLatexExporter() {
+  latexExporterModule = latexExporterModule || require('./latexExporter.cjs');
+  return latexExporterModule;
+}
+
+function mcpCliPath() {
+  if (isMac && app.isPackaged) {
+    return path.join(process.resourcesPath, 'app.asar.unpacked', 'electron', 'mcp-cli.cjs');
+  }
+
+  return path.join(__dirname, 'mcp-cli.cjs');
+}
+
+function buildMcpServerEntry(clientName, options = {}) {
+  if (isMac && !options.useGuiBinary) {
+    return {
+      command: 'node',
+      args: [mcpCliPath()],
+      env: {
+        SCIPAPER_MCP_CLIENT: clientName,
+      },
+    };
+  }
+
+  return {
+    command: process.execPath,
+    args: ['--mcp-server'],
+    env: {
+      SCIPAPER_MCP_CLIENT: clientName,
+    },
+  };
+}
 
 function buildMcpInfo() {
+  const genericEntry = buildMcpServerEntry('Cursor');
   const genericConfig = {
     mcpServers: {
-      'scipaper-todo': {
-        command: process.execPath,
-        args: ['--mcp-server'],
-        env: {
-          SCIPAPER_MCP_CLIENT: 'Cursor',
-        },
-      },
+      'scipaper-todo': genericEntry,
     },
   };
 
   const config = {
     mcpServers: {
-      'scipaper-todo': {
-        command: process.execPath,
-        args: ['--mcp-server'],
-        env: {
-          SCIPAPER_MCP_CLIENT: 'Cursor',
-        },
-      },
+      'scipaper-todo': genericEntry,
     },
   };
 
   return {
-    command: process.execPath,
-    args: ['--mcp-server'],
+    command: genericEntry.command,
+    args: genericEntry.args,
     baseDirectory: BASE_DIRECTORY,
     configJson: JSON.stringify(config, null, 2),
     examples: {
@@ -117,13 +161,16 @@ function buildMcpInfo() {
       claudeCode: JSON.stringify(
         {
           mcpServers: {
-            'scipaper-todo': {
-              command: process.execPath,
-              args: ['--mcp-server'],
-              env: {
-                SCIPAPER_MCP_CLIENT: 'Claude Code',
-              },
-            },
+            'scipaper-todo': buildMcpServerEntry('Claude Code'),
+          },
+        },
+        null,
+        2,
+      ),
+      guiBinary: JSON.stringify(
+        {
+          mcpServers: {
+            'scipaper-todo': buildMcpServerEntry('Cursor', { useGuiBinary: true }),
           },
         },
         null,
@@ -133,6 +180,45 @@ function buildMcpInfo() {
   };
 }
 
+function configureApplicationMenu() {
+  if (!isMac) {
+    return;
+  }
+
+  const template = [
+    {
+      label: app.name,
+      submenu: [
+        { role: 'about' },
+        { type: 'separator' },
+        { role: 'services' },
+        { type: 'separator' },
+        { role: 'hide' },
+        { role: 'hideOthers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' },
+      ],
+    },
+    { role: 'editMenu' },
+    { role: 'viewMenu' },
+    { role: 'windowMenu' },
+    {
+      role: 'help',
+      submenu: [
+        {
+          label: 'Open Data Folder',
+          click: async () => {
+            await shell.openPath(BASE_DIRECTORY);
+          },
+        },
+      ],
+    },
+  ];
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
 function createWindow() {
   const window = new BrowserWindow({
     width: 1520,
@@ -140,7 +226,7 @@ function createWindow() {
     minWidth: 1280,
     minHeight: 820,
     backgroundColor: '#f4ecde',
-    autoHideMenuBar: true,
+    autoHideMenuBar: !isMac,
     title: 'SciPaper Todo',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -309,11 +395,13 @@ function registerIpc() {
     return exportPath;
   });
   ipcMain.handle('article:exportDocx', async (_event, { articleId, templateId, applyItalicGuide }) => {
+    const { exportArticleDocx } = getDocxExporter();
     const exportPath = await exportArticleDocx(articleId, templateId, { applyItalicGuide: !!applyItalicGuide });
     await shell.showItemInFolder(exportPath);
     return exportPath;
   });
   ipcMain.handle('article:exportLatex', async (_event, { articleId }) => {
+    const { exportArticleLatex } = getLatexExporter();
     const exportPath = exportArticleLatex(articleId);
     await shell.showItemInFolder(exportPath);
     return exportPath;
@@ -474,6 +562,7 @@ function registerIpc() {
 
   function enrichProviders() {
     const { providers, activeId } = listProviders();
+    const llmKeyStore = getLlmKeyStore();
     return {
       providers: providers.map((p) => ({ ...p, hasApiKey: llmKeyStore.hasKey(p.id) })),
       activeId,
@@ -488,7 +577,7 @@ function registerIpc() {
     const provider = addProviderStorage(meta);
     if (apiKey && typeof apiKey === 'string' && apiKey.trim()) {
       try {
-        llmKeyStore.setKey(provider.id, apiKey.trim());
+        getLlmKeyStore().setKey(provider.id, apiKey.trim());
       } catch (error) {
         console.warn('Failed to save API key:', error.message);
       }
@@ -503,7 +592,7 @@ function registerIpc() {
     }
     if (typeof apiKey === 'string' && apiKey.trim()) {
       try {
-        llmKeyStore.setKey(id, apiKey.trim());
+        getLlmKeyStore().setKey(id, apiKey.trim());
       } catch (error) {
         console.warn('Failed to save API key:', error.message);
       }
@@ -513,7 +602,7 @@ function registerIpc() {
 
   ipcMain.handle('llm:deleteProvider', async (_event, { id }) => {
     deleteProviderStorage(id);
-    try { llmKeyStore.deleteKey(id); } catch {}
+    try { getLlmKeyStore().deleteKey(id); } catch {}
     return enrichProviders();
   });
 
@@ -523,7 +612,7 @@ function registerIpc() {
   });
 
   ipcMain.handle('llm:testProvider', async (_event, { id }) => {
-    return llmClient.testProvider(id);
+    return getLlmClient().testProvider(id);
   });
 
   // ---------- LLM chat ----------
@@ -533,15 +622,15 @@ function registerIpc() {
     if (!activeId) {
       return { ok: false, error: '未设置活跃 Provider' };
     }
-    return llmClient.startChat({ ...params, providerId: activeId, mainWindow: win });
+    return getLlmClient().startChat({ ...params, providerId: activeId, mainWindow: win });
   });
 
   ipcMain.handle('llm:cancelSession', async (_event, { sessionId }) => {
-    llmClient.cancelSession(sessionId);
+    getLlmClient().cancelSession(sessionId);
   });
 
   ipcMain.handle('llm:approve', async (_event, { sessionId, callId, approved, alwaysAllow }) => {
-    llmClient.resolveApproval(sessionId, callId, approved, alwaysAllow);
+    getLlmClient().resolveApproval(sessionId, callId, approved, alwaysAllow);
   });
 
   ipcMain.handle('scenario:list', () => listWritingScenarios());
@@ -606,10 +695,12 @@ async function startApplication() {
   app.setName('SciPaper Todo');
 
   if (isMcpMode) {
+    const { startMcpServer } = getMcpServer();
     await startMcpServer();
     return;
   }
 
+  configureApplicationMenu();
   loadState();
   registerIpc();
   startDatabaseWatch();
