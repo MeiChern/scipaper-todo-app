@@ -72,12 +72,11 @@ const PDF_EXTENSIONS = new Set(['.pdf']);
 const THESES_DIRECTORY = path.join(BASE_DIRECTORY, 'Theses');
 const DEFAULT_ITALIC_PROMPT =
   '在生成或修改科研写作正文时,自动按学术英语惯例对以下内容标注斜体(用 markdown *text*):' +
-  '\n- 物种学名(属种二项式,如 *Chilo suppressalis*),属名首字母大写,种名小写' +
-  '\n- 拉丁短语(in vitro / in vivo / ex vivo / de novo / et al. / vs. / e.g. / i.e. / per se / via)' +
+  '\n- 拉丁短语(in situ / in vitro / in vivo / de novo / et al. / vs. / e.g. / i.e. / per se / via)' +
   '\n- 统计变量符号(p, t, F, r, n, N, df, χ²),例如 *p* < 0.05' +
-  '\n- 基因符号(按物种约定:果蝇基因斜体小写如 *hsp70*;蛋白正体大写如 HSP70)' +
-  '\n- 数学常量符号(*e* 自然常数,*i* 虚数,*x* 自变量等)' +
-  '\n规则不必穷举,你应当依据学术英语规范主动识别并标注。中文写作中,这些专有术语在中文里也保持斜体英文形式(中文不变)。';
+  '\n- 数学和模型变量符号(*x*, *z*, *k*, *D*, *R*, *t* 等),但不要把单位斜体' +
+  '\n- 地层、年代、地点、矿物、岩石、数据集、软件名、仪器型号和单位通常保持正体,除非期刊规范另有要求' +
+  '\n规则不必穷举,你应当依据地学期刊与学术英语规范主动识别并标注。中文写作中,这些英文专有术语保持原文形式(中文不变)。';
 const WINDOWS_IMPORT_RELINK_MESSAGE = 'This attachment was imported from Windows; please re-link it on this Mac.';
 const warnedWindowsImportPaths = new Set();
 
@@ -315,17 +314,34 @@ function normalizeLlmProviders(arr) {
   return ensureDefaultProviders(providers);
 }
 
+function loadBuiltinScenarios() {
+  try {
+    const { BUILTIN_SCENARIOS } = require('./writingScenarios.cjs');
+    return Array.isArray(BUILTIN_SCENARIOS) ? BUILTIN_SCENARIOS.map((scenario) => ({ ...scenario })) : [];
+  } catch {
+    return [];
+  }
+}
+
 function ensureDefaultScenarios(arr) {
+  const builtins = loadBuiltinScenarios();
+
   if (arr.length === 0) {
-    try {
-      const { BUILTIN_SCENARIOS } = require('./writingScenarios.cjs');
-      return Array.isArray(BUILTIN_SCENARIOS) ? BUILTIN_SCENARIOS.map((scenario) => ({ ...scenario })) : [];
-    } catch {
-      return [];
-    }
+    return builtins;
   }
 
-  return arr;
+  const existingById = new Map(arr.map((scenario) => [scenario.id, scenario]));
+  const builtinIds = new Set(builtins.map((scenario) => scenario.id));
+  const mergedBuiltins = builtins.map((builtin) => {
+    const existing = existingById.get(builtin.id);
+    return {
+      ...builtin,
+      enabled: typeof existing?.enabled === 'boolean' ? existing.enabled : builtin.enabled,
+    };
+  });
+  const customScenarios = arr.filter((scenario) => !builtinIds.has(scenario.id));
+
+  return [...mergedBuiltins, ...customScenarios];
 }
 
 function normalizeWritingScenarios(arr) {
@@ -336,9 +352,16 @@ function normalizeWritingScenarios(arr) {
   return ensureDefaultScenarios(arr);
 }
 
+function isLegacyBioItalicPrompt(prompt) {
+  return prompt.includes('*Chilo suppressalis*') || prompt.includes('*hsp70*') || prompt.includes('物种学名');
+}
+
 function normalizeItalicGuide(obj = {}) {
+  const prompt = typeof obj.prompt === 'string' && obj.prompt.trim() && !isLegacyBioItalicPrompt(obj.prompt)
+    ? obj.prompt
+    : DEFAULT_ITALIC_PROMPT;
   return {
-    prompt: typeof obj.prompt === 'string' ? obj.prompt : DEFAULT_ITALIC_PROMPT,
+    prompt,
     enabled: typeof obj.enabled === 'boolean' ? obj.enabled : true,
   };
 }
@@ -2039,7 +2062,7 @@ function exportMarkdown(articleId) {
     Title: '# 标题',
     Abstract: '## 摘要',
     Introduction: '## 前言',
-    MaterialsAndMethods: '## 材料与方法',
+    MaterialsAndMethods: '## 数据与方法',
     Results: '## 结果',
     Discussion: '## 讨论',
     References: '## 参考文献',
@@ -2133,32 +2156,32 @@ function getWritingGuidance(articleId, targetSection) {
   const context = article.researchContext;
   const hints = {
     Title: [
-      `把科学问题“${context.scientificQuestion || '研究问题'}”压缩成一句可投稿的标题。`,
-      '优先体现变量关系、模型系统和主要发现，不要一开始就写结论式夸张表述。',
+      `把地学问题“${context.scientificQuestion || '研究问题'}”压缩成一句可投稿的标题。`,
+      '优先体现研究对象、地点/尺度、方法和主要发现，不要一开始就写结论式夸张表述。',
     ],
     Abstract: [
-      '按背景、问题、方法、结果、结论五句结构起草。',
-      `摘要里至少点到方法关键词：${context.approach || '核心实验方案'}`,
+      '按背景、问题、数据/方法、结果、结论五句结构起草。',
+      `摘要里至少点到数据或方法关键词：${context.approach || '核心数据与方法'}`,
     ],
     Introduction: [
       `第一段先界定问题：${context.scientificQuestion || '当前研究问题'}`,
-      `第二段承接现象：${context.observedPhenomenon || '关键观察现象'}`,
+      `第二段承接研究区、数据模式或关键现象：${context.observedPhenomenon || '关键观察现象'}`,
       `末段落到假设与研究目标：${context.hypothesis || '研究假设'}`,
     ],
     MaterialsAndMethods: [
-      `把方案“${context.approach || '实验流程'}”拆成材料、处理、检测、统计四块。`,
-      '先记录样本量、重复次数、统计方法，再补试剂和仪器型号。',
+      `把方案“${context.approach || '数据与方法流程'}”拆成数据源、处理流程、分析/模型、QA/QC 四块。`,
+      '先记录 CRS、分辨率、单位、样品/站点数量、软件版本和关键参数，再补仪器或数据来源细节。',
     ],
     Results: [
-      '每个结果块只证明一个命题，先图后文。',
+      '每个结果块只证明一个命题，先图、表、地图或模型输出，后正文。',
       `优先解释与假设“${context.hypothesis || '研究假设'}”直接相关的数据。`,
     ],
     Discussion: [
-      '先回扣主要发现，再解释机制，再谈局限与下一步。',
-      `把观察现象“${context.observedPhenomenon || '现象'}”与文献中的相近现象作对照。`,
+      '先回扣主要发现，再解释机制或过程，再谈不确定性、局限与下一步。',
+      `把观察现象“${context.observedPhenomenon || '现象'}”与已有区域研究、数据集或模型结果作对照。`,
     ],
     References: [
-      '先补齐核心领域综述，再补最近三年最直接的机制研究。',
+      '先补齐核心综述和区域研究，再补数据集、地图、软件、方法和最近三年最直接的研究。',
       '如果某个结论还没有文献支撑，先在这一节留空位，不要在正文里硬写。',
     ],
   };
@@ -2254,7 +2277,7 @@ function exportToHTML(articleId) {
       'Title': '标题',
       'Abstract': '摘要',
       'Introduction': '前言',
-      'MaterialsAndMethods': '材料与方法',
+      'MaterialsAndMethods': '数据与方法',
       'Results': '结果',
       'Discussion': '讨论',
       'References': '参考文献'

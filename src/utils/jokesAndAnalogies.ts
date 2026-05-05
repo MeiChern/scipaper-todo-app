@@ -68,7 +68,7 @@ const JOKES_SHORT_BURST = [
 
 const JOKES_GENERIC = [
   '研究是从一个 deadline 跑到下一个 deadline。',
-  'Methods 比想象中难写,Discussion 比想象中难写,Abstract 也是。',
+  'Data and Methods 比想象中难写,Discussion 比想象中难写,Abstract 也是。',
   '把 placeholder 都填上,这才是科研。',
   '论文写到一半,你想起忘了写 Conclusion (但下意识说"再喝一口咖啡")。',
   'Paper 还没投,但今天的你已经赢了一段对话。',
@@ -98,7 +98,7 @@ const ANALOGIES: { threshold: number; render: (w: number) => string }[] = [
   { threshold: 200, render: (w) => `相当于 ${(w / 140).toFixed(1)} 条朋友圈长文。` },
   { threshold: 500, render: (w) => `相当于 ${Math.round(w / 250)} 条 reviewer comment 的总长。` },
   { threshold: 1500, render: (w) => `相当于 ${(w / 1500).toFixed(1)} 篇 short letter。` },
-  { threshold: 4000, render: (w) => `相当于 ${(w / 4000).toFixed(1)} 篇 research article 的 Methods 章节。` },
+  { threshold: 4000, render: (w) => `相当于 ${(w / 4000).toFixed(1)} 篇 research article 的 Data and Methods 章节。` },
   { threshold: 8000, render: (w) => `相当于一篇普通 research article 的 ${Math.round((w / 8000) * 100)}%。` },
   { threshold: 20000, render: (w) => `相当于一篇博士学位论文章节的 ${Math.round((w / 20000) * 100)}%。` },
   { threshold: 50000, render: (w) => `相当于 ${(w / 50000).toFixed(2)} 部短篇小说。` },

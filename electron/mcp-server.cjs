@@ -106,7 +106,7 @@ function buildTodayInbox() {
   if (!session?.planText) todoChecklist.push('设今天的 plan（用 set_daily_plan）');
   if (!todayMood) todoChecklist.push('记一下当前心情（用 add_mood_entry）');
   if (todoChecklist.length === 0 || todayPomos === 0) todoChecklist.push('开一段番茄钟，结束后 add_pomodoro_session');
-  if (todayEntries.length < 3) todoChecklist.push('写几条今日时间线（add_progress_entry，kind: read/experiment/idea/cite/analysis）');
+  if (todayEntries.length < 3) todoChecklist.push('写几条今日时间线（add_progress_entry，read=文献/资料，experiment=野外/样品/测量，analysis=数据/GIS/模型，idea=解释）');
   if (!session?.summaryText) todoChecklist.push('日终前 end_daily_session 写收尾总结');
 
   return {
@@ -130,7 +130,7 @@ async function startMcpServer() {
     name: 'scipaper-todo',
     version: '1.0.0',
     instructions: [
-      'SciPaper Todo MCP server. 你接管的是一位科研工作者的日常论文工作台。',
+      'SciPaper Todo MCP server. 你接管的是一位地球科学研究者的日常论文工作台。',
       '',
       '每次会话开始时，建议先读 `scipaper://today/inbox` 资源，看看今天哪些"轨道"还没填——plan / 心情 / 番茄钟 / 进展条目 / 收尾总结。',
       '',
@@ -139,7 +139,7 @@ async function startMcpServer() {
       '- end_daily_session: 写收尾总结',
       '- add_mood_entry: 记心情（10 个 mood 之一 + 可选 note）',
       '- add_pomodoro_session: 记一段已完成的专注（duration 分钟）',
-      '- add_progress_entry: 写一条今日时间线条目（kind: read/experiment/writing/idea/cite/analysis）',
+      '- add_progress_entry: 写一条今日时间线条目（read=文献/报告/数据文档；experiment=野外/采样/实验室测量；analysis=数据处理/GIS/遥感/模型；idea=解释或概念模型；cite=论文/数据/软件引用）',
       '',
       '配套的写作 / 引文 / 评审工具按文章 id 分组，详见各 tool description。',
     ].join('\n'),
@@ -265,7 +265,7 @@ async function startMcpServer() {
             role: 'user',
             content: {
               type: 'text',
-              text: `请基于以下信息输出这篇生命科学论文的 IMRaD 大纲建议：\n标题：${article.title}\n科学问题：${article.researchContext.scientificQuestion}\n观察现象：${article.researchContext.observedPhenomenon}\n假设：${article.researchContext.hypothesis}\n方案：${article.researchContext.approach}`,
+              text: `请基于以下信息输出这篇地球科学论文的 IMRaD 大纲建议：\n标题：${article.title}\n地学问题：${article.researchContext.scientificQuestion}\n观察现象/数据模式：${article.researchContext.observedPhenomenon}\n机制假设：${article.researchContext.hypothesis}\n数据与方法方案：${article.researchContext.approach}`,
             },
           },
         ],
@@ -347,7 +347,7 @@ async function startMcpServer() {
                 '1. 如果 plan 为空 → 问我今天打算做什么，然后用 set_daily_plan 写下。',
                 '2. 如果 mood 为空 → 问我现在心情怎么样，从 Happy/Calm/Excited/Motivated/Grateful/Tired/Sad/Frustrated/Anxious/Melancholy 选一个，可以加一句话 note，然后用 add_mood_entry。',
                 '3. 如果今天还没番茄钟（pomodoro.sessions=0）→ 提醒我开一段，做完用 add_pomodoro_session 记下。',
-                '4. progressEntries 少于 3 条 → 引导我写几条今日时间线（read/experiment/idea/cite/analysis），用 add_progress_entry。',
+                '4. progressEntries 少于 3 条 → 引导我写几条今日时间线（read=文献/资料，experiment=野外/采样/实验室测量，analysis=数据/GIS/遥感/模型，idea=解释，cite=论文/数据/软件引用），用 add_progress_entry。',
                 '5. 临近收尾（如果用户说"今天就这样了"或类似话）→ 用 end_daily_session 写收尾总结。',
                 '',
                 '一次只问一件事，按顺序来。已经填好的别重复问。',

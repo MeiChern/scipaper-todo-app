@@ -92,7 +92,7 @@
         "zip"
       ],
       "category": "public.app-category.productivity",
-      "artifactName": "${productName}-${version}-${arch}.${ext}",
+      "artifactName": "SciPaper-Todo-${version}-${arch}.${ext}",
       "icon": "build/icon.icns",
       "hardenedRuntime": true,
       "gatekeeperAssess": false,

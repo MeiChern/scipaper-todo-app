@@ -9,7 +9,7 @@ const SECTION_LABELS = {
   Title: 'Title',
   Abstract: 'Abstract',
   Introduction: 'Introduction',
-  MaterialsAndMethods: 'Materials and Methods',
+  MaterialsAndMethods: 'Data and Methods',
   Results: 'Results',
   Discussion: 'Discussion',
   References: 'References',

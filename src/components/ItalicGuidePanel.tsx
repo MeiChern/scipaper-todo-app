@@ -9,12 +9,11 @@ interface Props {
 
 const DEFAULT_PROMPT =
   '在生成或修改科研写作正文时,自动按学术英语惯例对以下内容标注斜体(用 markdown *text*):' +
-  '\n- 物种学名(属种二项式,如 *Chilo suppressalis*),属名首字母大写,种名小写' +
-  '\n- 拉丁短语(in vitro / in vivo / ex vivo / de novo / et al. / vs. / e.g. / i.e. / per se / via)' +
+  '\n- 拉丁短语(in situ / in vitro / in vivo / de novo / et al. / vs. / e.g. / i.e. / per se / via)' +
   '\n- 统计变量符号(p, t, F, r, n, N, df, χ²),例如 *p* < 0.05' +
-  '\n- 基因符号(按物种约定:果蝇基因斜体小写如 *hsp70*;蛋白正体大写如 HSP70)' +
-  '\n- 数学常量符号(*e* 自然常数,*i* 虚数,*x* 自变量等)' +
-  '\n规则不必穷举,你应当依据学术英语规范主动识别并标注。中文写作中,这些专有术语在中文里也保持斜体英文形式(中文不变)。'
+  '\n- 数学和模型变量符号(*x*, *z*, *k*, *D*, *R*, *t* 等),但不要把单位斜体' +
+  '\n- 地层、年代、地点、矿物、岩石、数据集、软件名、仪器型号和单位通常保持正体,除非期刊规范另有要求' +
+  '\n规则不必穷举,你应当依据地学期刊与学术英语规范主动识别并标注。中文写作中,这些英文专有术语保持原文形式(中文不变)。'
 
 export function ItalicGuidePanel(props: Props): JSX.Element {
   const { config, onUpdate } = props
@@ -63,8 +62,8 @@ export function ItalicGuidePanel(props: Props): JSX.Element {
           <p className="eyebrow">Italic Guide</p>
           <h3>拉丁斜体规范</h3>
           <p className="muted-text" style={{ fontSize: 'var(--fs-xs)', marginTop: 'var(--sp-1)' }}>
-            启用后,LLM 在生成或润色正文时会按下方 prompt 自动标注物种名、拉丁短语、统计符号等斜体。
-            可按需追加病毒名、菌株号、酶活单位等领域规则。
+            启用后,LLM 在生成或润色正文时会按下方 prompt 自动标注拉丁短语、统计符号和模型变量等斜体。
+            可按需追加期刊、地层、矿物、软件或单位规则。
           </p>
         </div>
         <label

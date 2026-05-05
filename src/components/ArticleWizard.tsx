@@ -92,7 +92,7 @@ export function ArticleWizard({ open, busy, onClose, onSubmit }: ArticleWizardPr
                 <input
                   value={form.title}
                   onChange={(event) => setForm({ ...form, title: event.target.value })}
-                  placeholder="例如：XX 蛋白调控 YY 通路的新机制"
+                  placeholder="例如：基于 InSAR 与 DEM 约束的某流域滑坡变形机制"
                 />
               </label>
               <label className="field">
@@ -100,7 +100,7 @@ export function ArticleWizard({ open, busy, onClose, onSubmit }: ArticleWizardPr
                 <input
                   value={form.targetJournal}
                   onChange={(event) => setForm({ ...form, targetJournal: event.target.value })}
-                  placeholder="例如：Nature Cell Biology"
+                  placeholder="例如：Earth Surface Processes and Landforms"
                 />
               </label>
               <div className="form-tip">
@@ -111,7 +111,7 @@ export function ArticleWizard({ open, busy, onClose, onSubmit }: ArticleWizardPr
 
           {step === 1 && (
             <label className="field">
-              <span>你想解决什么科学问题？</span>
+              <span>你想解决什么地学问题？</span>
               <textarea
                 rows={8}
                 value={form.researchContext.scientificQuestion}
@@ -124,14 +124,14 @@ export function ArticleWizard({ open, busy, onClose, onSubmit }: ArticleWizardPr
                     },
                   })
                 }
-                placeholder="例如：XX 蛋白是否通过 WW 复合体调控 YY 信号通路？"
+                placeholder="例如：研究区滑坡变形是否主要受坡度、岩性和降雨事件共同控制？"
               />
             </label>
           )}
 
           {step === 2 && (
             <label className="field">
-              <span>你发现了什么科学现象？</span>
+              <span>你观察到什么地学现象或数据模式？</span>
               <textarea
                 rows={8}
                 value={form.researchContext.observedPhenomenon}
@@ -144,14 +144,14 @@ export function ArticleWizard({ open, busy, onClose, onSubmit }: ArticleWizardPr
                     },
                   })
                 }
-                placeholder="例如：敲除 XX 后细胞迁移明显下降，但增殖没有显著变化。"
+                placeholder="例如：InSAR 时间序列显示北坡变形速率更高，且雨季后出现加速。"
               />
             </label>
           )}
 
           {step === 3 && (
             <label className="field">
-              <span>你的假设是什么？</span>
+              <span>你的机制解释或假设是什么？</span>
               <textarea
                 rows={8}
                 value={form.researchContext.hypothesis}
@@ -164,14 +164,14 @@ export function ArticleWizard({ open, busy, onClose, onSubmit }: ArticleWizardPr
                     },
                   })
                 }
-                placeholder="例如：XX 通过调控 WW 的定位影响 YY 通路活性。"
+                placeholder="例如：弱层出露和季节性孔隙水压力升高共同降低边坡稳定性。"
               />
             </label>
           )}
 
           {step === 4 && (
             <label className="field">
-              <span>你准备怎么做？</span>
+              <span>你准备用哪些数据、方法或模型验证？</span>
               <textarea
                 rows={8}
                 value={form.researchContext.approach}
@@ -184,7 +184,7 @@ export function ArticleWizard({ open, busy, onClose, onSubmit }: ArticleWizardPr
                     },
                   })
                 }
-                placeholder="例如：CRISPR 敲除 + RNA-seq + 共免 + 恢复实验"
+                placeholder="例如：InSAR 形变提取 + DEM 地形因子 + 降雨阈值分析 + 稳定性模型 + 野外核查"
               />
             </label>
           )}
@@ -197,7 +197,7 @@ export function ArticleWizard({ open, busy, onClose, onSubmit }: ArticleWizardPr
                   <li>Title</li>
                   <li>Abstract</li>
                   <li>Introduction</li>
-                  <li>Materials & Methods</li>
+                  <li>Data & Methods</li>
                   <li>Results</li>
                   <li>Discussion</li>
                   <li>References</li>

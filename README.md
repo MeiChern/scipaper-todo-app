@@ -24,13 +24,13 @@
 
 ### 这是什么
 
-**SciPaper Todo** 是一款面向生命科学研究者的桌面应用，把"写论文"当成一个软件工程项目来管理：
+**SciPaper Todo** 是一款面向地球科学研究者的桌面应用，把"写论文"当成一个软件工程项目来管理：
 
-- 一篇论文 = 一个仓库，按 IMRaD 结构组织（Title / Abstract / Introduction / Methods / Results / Discussion / References）
+- 一篇论文 = 一个仓库，按 IMRaD 结构组织（Title / Abstract / Introduction / Data and Methods / Results / Discussion / References）
 - 数据本地，不上云；附件、版本、修改记录全部留在你机器上
 - 内置 MCP 服务器，让 Cursor / Claude Code / Claude Desktop 直接读写你的论文
 - 可选接入大模型（DeepSeek 等），AI 助手懂当前章节、当前学科、当前审稿轮次
-- 支持 Word 导出，可一键 LLM 自动按学术规范打斜体（`*Chilo suppressalis*` / `*p* < 0.05`）
+- 支持 Word 导出，可一键 LLM 自动按学术规范打斜体（`*in situ*` / `*p* < 0.05`）
 - Zotero 直连，文献检索 / 全文 / 批注 都能在 AI 对话里自然调用
 
 ### 核心特色
@@ -39,8 +39,8 @@
 |---|---|
 | 🧠 **MCP 双向协议** | 内置 stdio MCP server 暴露 68 个工具（本地写作、进展记录、导出、Zotero 等），任何兼容 MCP 的 AI 客户端都能查/写你的论文 |
 | 📚 **IMRaD 一等公民** | 创建论文先回答 4 个研究问题（科学问题 / 现象 / 假设 / 方案），自动生成七章节骨架；ContentBlock 支持文本 / 图片 / 文件链接，每次修改自动版本快照 |
-| 🤖 **内置 AI 助手 + 8 场景** | 右侧 Cmd+K Drawer，预置 Abstract / Introduction / Methods / Results / Discussion / Conclusion / Reply Reviewer / Distill 八个场景 prompt，可自定义；支持 OpenAI 与 Anthropic 双协议、思考模式（reasoning_content）流式渲染、工具调用 + 二次确认 |
-| 📝 **docx 三模板 + 拉丁斜体规范** | Times New Roman 通用学术 / 宋体 1.5 行距中文学位 / Arial 紧凑 Nature 风格三套模板；勾选"套斜体规范"即可让 LLM 在导出前按学术英语惯例自动给学名 / 拉丁短语 / 统计变量打斜体 |
+| 🤖 **内置 AI 助手 + 地学场景** | 右侧 Cmd+K Drawer，预置 Abstract / Introduction / Data and Methods / Results / Discussion / Conclusion / Reply Reviewer / Distill / Geo Log / Daily Summary 等场景 prompt，可自定义；支持 OpenAI 与 Anthropic 双协议、思考模式（reasoning_content）流式渲染、工具调用 + 二次确认 |
+| 📝 **docx 三模板 + 拉丁斜体规范** | Times New Roman 通用学术 / 宋体 1.5 行距中文学位 / Arial 紧凑 Nature 风格三套模板；勾选"套斜体规范"即可让 LLM 在导出前按学术英语惯例自动给拉丁短语 / 统计变量 / 模型变量打斜体 |
 | 📖 **Zotero 集成** | 通过 zotero-mcp-plugin 直连本地 Zotero（不限版本，6 / 7 / 8 都支持），library 检索 / collection 浏览 / item 详情 / 全文 / 批注 五种查询能力 |
 | 🔍 **审稿工作流** | 多轮 ReviewRound + Major/Minor 意见分类 + Revision 关联到具体 ContentBlock + 一键生成回复信草稿 |
 | 🎨 **多主题 + 海报分享** | claude / pixel / fresh 三主题 token 化切换；1080×1440 写作打卡海报（含 Latin 引文、印章、波浪线、渐变进度条） |
@@ -114,7 +114,7 @@
 
 ### 谁适合用
 
-- 生命科学博士生 / 博后 / 青年 PI（默认场景）
+- 地球科学博士生 / 博后 / 青年 PI（默认场景）
 - 任何 IMRaD 写作者，特别是要管理 **多篇并行 + 多轮审稿** 的人
 - 想把 AI 真正接到自己写作流程里、又不愿把数据交给云的人
 
@@ -131,13 +131,13 @@
 
 ### What is this
 
-**SciPaper Todo** is a desktop app for life-science researchers that treats manuscript writing like a software project:
+**SciPaper Todo** is a desktop app for geoscience researchers that treats manuscript writing like a software project:
 
-- One paper = one repository, organised by IMRaD (Title / Abstract / Introduction / Methods / Results / Discussion / References)
+- One paper = one repository, organised by IMRaD (Title / Abstract / Introduction / Data and Methods / Results / Discussion / References)
 - Local-first. Attachments, versions, edit history all stay on your machine
 - Built-in MCP server lets Cursor / Claude Code / Claude Desktop read and write your manuscripts directly
 - Optional LLM integration (DeepSeek and others). The assistant knows your current section, field, and review round
-- Word export with one-click LLM auto-italicisation per academic conventions (`*Chilo suppressalis*` / `*p* < 0.05`)
+- Word export with one-click LLM auto-italicisation per academic conventions (`*in situ*` / `*p* < 0.05`)
 - Direct Zotero integration: search, fulltext, annotations all callable from chat
 
 ### Key features
@@ -146,8 +146,8 @@
 |---|---|
 | 🧠 **Bidirectional MCP** | Built-in stdio MCP server exposes 68 tools across local writing, progress logging, exports, Zotero, and more. Any MCP-compatible AI client can query and write to your manuscripts |
 | 📚 **IMRaD as a first-class citizen** | Creating a paper starts with 4 research questions (problem / phenomenon / hypothesis / approach) that auto-generate the 7-section skeleton. Content blocks support text / image / file link, with automatic version snapshots on every edit |
-| 🤖 **Built-in AI drawer + 8 scenarios** | Right-side Cmd+K drawer with preset prompts for Abstract / Introduction / Methods / Results / Discussion / Conclusion / Reply Reviewer / Distill, all customisable. OpenAI and Anthropic protocols, streaming `reasoning_content` for thinking-mode models, tool-calling with confirm-before-write |
-| 📝 **3 docx templates + Latin italic guide** | Times New Roman academic / SimSun 1.5-spacing thesis / Arial Nature-style. Tick "apply italic guide" and the exporter calls the LLM to mark italics on species names, Latin phrases, and statistical variables before writing the docx |
+| 🤖 **Built-in AI drawer + geoscience scenarios** | Right-side Cmd+K drawer with preset prompts for Abstract / Introduction / Data and Methods / Results / Discussion / Conclusion / Reply Reviewer / Distill / Geo Log / Daily Summary, all customisable. OpenAI and Anthropic protocols, streaming `reasoning_content` for thinking-mode models, tool-calling with confirm-before-write |
+| 📝 **3 docx templates + Latin italic guide** | Times New Roman academic / SimSun 1.5-spacing thesis / Arial Nature-style. Tick "apply italic guide" and the exporter calls the LLM to mark italics on Latin phrases, statistical variables, and model variables before writing the docx |
 | 📖 **Zotero integration** | Via zotero-mcp-plugin (works with Zotero 6/7/8): library search, collection browsing, item details, fulltext, annotations |
 | 🔍 **Review workflow** | Multiple ReviewRounds, Major/Minor tagging, Revisions linked to specific ContentBlocks, one-click response-letter draft |
 | 🎨 **Themes + share posters** | Three token-based themes (claude / pixel / fresh). Generates 1080×1440 daily-writing posters with Latin epigraph, seal, waveform, gradient progress |
@@ -221,7 +221,7 @@
 
 ### Who is this for
 
-- Life-science PhD students, postdocs, early-career PIs (default audience)
+- Geoscience PhD students, postdocs, early-career PIs (default audience)
 - Any IMRaD writer juggling multiple manuscripts and review rounds
 - Anyone who wants AI in their writing flow but does not want their data on a vendor's cloud
 

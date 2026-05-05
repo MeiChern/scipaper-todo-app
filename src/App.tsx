@@ -34,7 +34,7 @@ const SECTION_LABELS: Record<SectionType, string> = {
   Title: '题目',
   Abstract: '摘要',
   Introduction: '前言',
-  MaterialsAndMethods: '材料方法',
+  MaterialsAndMethods: '数据方法',
   Results: '结果',
   Discussion: '讨论',
   References: '参考文献',

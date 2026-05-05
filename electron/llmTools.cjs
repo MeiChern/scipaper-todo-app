@@ -648,7 +648,7 @@ const TOOLS = [
   {
     name: 'add_tag',
     description:
-      '给指定论文添加标签，用于按主题、优先级、实验类型或投稿阶段进行归类。该工具会写入标签名称和颜色，重复标签通常由存储层保持为已有结果。',
+      '给指定论文添加标签，用于按主题、研究区、数据类型、方法、优先级或投稿阶段进行归类。该工具会写入标签名称和颜色，重复标签通常由存储层保持为已有结果。',
     isWrite: true,
     parameters: {
       type: 'object',
@@ -917,14 +917,14 @@ const TOOLS = [
   {
     name: 'add_progress_entry',
     description:
-      '记录一项当日科研进展（小任务），比章节更细、比单次编辑更明确：读了一篇论文、跑了一次实验、想到一个新假设、录入一条引用、写了一段、跑了一次分析。每条都必须挂到一篇论文。这是除字数外用来反映"今天我做了什么"的主要数据来源。',
+      '记录一项当日地学研究进展（小任务），比章节更细、比单次编辑更明确：读了一篇论文或报告、下载/整理一个数据集、完成野外/采样/实验室测量、想到一个解释或概念模型、录入一条论文/数据/软件引用、写了一段、跑了一次 GIS/遥感/统计/模型分析。每条都必须挂到一篇论文。这是除字数外用来反映"今天我做了什么"的主要数据来源。',
     isWrite: true,
     parameters: {
       type: 'object',
       properties: {
         articleId: { type: 'string', description: '关联的论文 ID（必填）。' },
-        kind: { type: 'string', enum: PROGRESS_KIND_ENUM, description: '进展类型。read=读文献；experiment=做实验；writing=写正文（一般由 add_text_block 自动派生，手工很少用）；idea=新想法/假设；cite=录入参考文献；analysis=数据分析。' },
-        title: { type: 'string', description: '一句话描述这件事，例如"读了 Smith 2024，找到 piRNA 通路反例"。' },
+        kind: { type: 'string', enum: PROGRESS_KIND_ENUM, description: '进展类型。read=读文献/报告/数据文档；experiment=野外、采样、实验室测量、仪器或样品工作；writing=写正文（一般由 add_text_block 自动派生，手工很少用）；idea=解释、机制、概念模型或讨论想法；cite=录入论文、数据集、地图、软件或仓库引用；analysis=数据清洗、重投影、GIS/遥感/地球物理/地球化学分析、建模或不确定性分析。' },
+        title: { type: 'string', description: '一句话描述这件事，例如"重投影 DEM 并检查滑坡点位叠加误差"。' },
         detail: { type: 'string', description: '可选的更长描述。' },
         sectionId: { type: 'string', description: '可选：关联到哪个章节。' },
         findingId: { type: 'string', description: '可选：关联到 Results 下的某个 Finding（小结果点）。' },
@@ -998,7 +998,7 @@ const TOOLS = [
   },
   {
     name: 'link_progress_to_finding',
-    description: '把一条已存在的进展条目挂到某个 Finding（结果小点）下。常见场景：先记了一个 PCR 结果，后来确定它支撑 Result 1 的某个 finding。',
+    description: '把一条已存在的进展条目挂到某个 Finding（结果小点）下。常见场景：先记了一个地图、样品、模型或数据处理结果，后来确定它支撑 Result 1 的某个 finding。',
     isWrite: true,
     parameters: {
       type: 'object',
@@ -1014,14 +1014,14 @@ const TOOLS = [
   {
     name: 'add_finding',
     description:
-      '在某篇论文的指定章节下新增一个 Finding（结果小点），主要用于 Results 章节，把"Result 1 = ..."这样的子结论显式建出来，方便后续把多次实验、分析、读到的反例都挂到它下面。',
+      '在某篇论文的指定章节下新增一个 Finding（结果小点），主要用于 Results 章节，把"Result 1 = ..."这样的子结论显式建出来，方便后续把地图、样品、野外记录、数据处理、模型分析、文献反例都挂到它下面。',
     isWrite: true,
     parameters: {
       type: 'object',
       properties: {
         articleId: { type: 'string' },
         sectionType: { type: 'string', enum: SECTION_TYPE_ENUM, description: '一般是 Results。' },
-        title: { type: 'string', description: '小点的概括，例如"Sf9 piRNA 在病毒侵染时上调"。' },
+        title: { type: 'string', description: '小点的概括，例如"北坡滑坡密度在 25-35 度坡段最高"。' },
         description: { type: 'string', description: '可选的展开说明。' },
         status: { type: 'string', enum: FINDING_STATUS_ENUM, description: '默认 planned。' },
       },

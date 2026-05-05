@@ -225,7 +225,7 @@ export function SettingsView(props: SettingsViewProps): JSX.Element {
         <button className="module-card" onClick={() => setActive('scenarios')} type="button">
           <span className="module-card-icon">✎</span>
           <h3 className="module-card-title">写作场景库</h3>
-          <p className="module-card-desc">8 个内置 + 自定义,Chat 自动注入</p>
+          <p className="module-card-desc">地学内置场景 + 自定义,Chat 自动注入</p>
           <p className="module-card-status">
             {props.scenarios.filter((s) => s.enabled).length} 个启用 / {props.scenarios.length} 个总数
           </p>
@@ -234,7 +234,7 @@ export function SettingsView(props: SettingsViewProps): JSX.Element {
         <button className="module-card" onClick={() => setActive('italic')} type="button">
           <span className="module-card-icon">𝐼</span>
           <h3 className="module-card-title">拉丁斜体规范</h3>
-          <p className="module-card-desc">物种学名 / 拉丁短语 / 统计符号自动斜体</p>
+          <p className="module-card-desc">拉丁短语 / 统计符号 / 模型变量自动斜体</p>
           <p className="module-card-status">{props.italicGuide.enabled ? '已启用' : '未启用'}</p>
         </button>
 

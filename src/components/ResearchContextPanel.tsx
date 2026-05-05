@@ -39,7 +39,7 @@ export function ResearchContextPanel({ article, onSave }: ResearchContextPanelPr
 
         <div className="form-grid context-grid">
           <label className="field">
-            <span>你想解决什么科学问题？</span>
+            <span>你想解决什么地学问题？</span>
             <textarea
               rows={5}
               value={draft.scientificQuestion}
@@ -47,7 +47,7 @@ export function ResearchContextPanel({ article, onSave }: ResearchContextPanelPr
             />
           </label>
           <label className="field">
-            <span>你发现了什么科学现象？</span>
+            <span>你观察到什么地学现象或数据模式？</span>
             <textarea
               rows={5}
               value={draft.observedPhenomenon}
@@ -55,11 +55,11 @@ export function ResearchContextPanel({ article, onSave }: ResearchContextPanelPr
             />
           </label>
           <label className="field">
-            <span>你的假设是什么？</span>
+            <span>你的机制解释或假设是什么？</span>
             <textarea rows={5} value={draft.hypothesis} onChange={(event) => setDraft({ ...draft, hypothesis: event.target.value })} />
           </label>
           <label className="field">
-            <span>你准备怎么做？</span>
+            <span>你准备用哪些数据、方法或模型验证？</span>
             <textarea rows={5} value={draft.approach} onChange={(event) => setDraft({ ...draft, approach: event.target.value })} />
           </label>
         </div>

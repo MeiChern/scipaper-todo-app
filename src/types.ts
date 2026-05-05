@@ -112,11 +112,11 @@ export interface Section {
 
 export type ProgressEntryKind =
   | 'read'        // 读了一篇/一段文献
-  | 'experiment'  // 做了实验
+  | 'experiment'  // 野外、采样、实验室测量或仪器/样品工作
   | 'writing'     // 写了字（也会自动从 add_text_block 派生）
-  | 'idea'        // 蹦出一个新想法/假设
+  | 'idea'        // 新解释、机制假设或概念模型
   | 'cite'        // 录入了一条参考文献
-  | 'analysis'    // 跑了数据分析
+  | 'analysis'    // 数据处理、GIS/遥感/模型或不确定性分析
   | 'focus'       // 一段番茄钟专注
   | 'mood'        // 一次心情记录
 
@@ -125,7 +125,7 @@ export interface ProgressEntry {
   date: string             // YYYY-MM-DD
   articleId: string        // 必须挂到一篇文章
   kind: ProgressEntryKind
-  title: string            // 一句话："读了 Smith 2024，找到 piRNA 通路反例"
+  title: string            // 一句话："重投影 DEM 并检查滑坡点位叠加误差"
   detail?: string
   sectionId?: string
   findingId?: string

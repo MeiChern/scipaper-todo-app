@@ -14,7 +14,7 @@ const SECTION_LABELS: Record<SectionType, string> = {
   Title: 'Title',
   Abstract: 'Abstract',
   Introduction: 'Introduction',
-  MaterialsAndMethods: 'Materials & Methods',
+  MaterialsAndMethods: 'Data & Methods',
   Results: 'Results',
   Discussion: 'Discussion',
   References: 'References',

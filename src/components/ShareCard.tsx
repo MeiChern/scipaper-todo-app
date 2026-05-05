@@ -353,7 +353,7 @@ function wrapCenteredText(
 const ENTRY_KIND_ORDER: ProgressEntryKind[] = ['read', 'experiment', 'writing', 'analysis', 'idea', 'cite', 'focus', 'mood']
 const ENTRY_KIND_LABELS: Record<ProgressEntryKind, string> = {
   read: '读',
-  experiment: '实验',
+  experiment: '野/样',
   writing: '写',
   analysis: '析',
   idea: '想',
@@ -367,7 +367,7 @@ const ENTRY_KIND_COLORS: Partial<Record<ProgressEntryKind, string>> = {
 }
 const ENTRY_KIND_UNITS: Record<ProgressEntryKind, string> = {
   read: '篇',
-  experiment: '组',
+  experiment: '项',
   writing: '字',
   analysis: '项',
   idea: '个',

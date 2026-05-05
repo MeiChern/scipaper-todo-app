@@ -57,7 +57,7 @@ function FindingsPanel({
         <span className='findings-panel-count'>{findings.length}</span>
       </div>
       <p className='findings-panel-hint'>
-        把 Result 拆成可挂的小点：实验、阅读、分析这些进展条目都可以挂到下面。
+        把 Result 拆成可挂的小点：野外记录、样品、地图、模型、阅读和分析进展都可以挂到下面。
       </p>
       <ul className='findings-list'>
         {findings.map((finding) => (
@@ -92,7 +92,7 @@ function FindingsPanel({
         <input
           type='text'
           className='findings-add-input'
-          placeholder='例如：Sf9 piRNA 在病毒侵染时上调'
+          placeholder='例如：北坡滑坡密度在 25-35 度坡段最高'
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {

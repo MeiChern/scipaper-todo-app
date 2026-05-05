@@ -13,7 +13,7 @@ import { pickKickoffPlaceholder } from '../utils/jokesAndAnalogies'
 
 const KIND_LABELS: Record<ProgressEntryKind, string> = {
   read: '读',
-  experiment: '实验',
+  experiment: '野/样',
   writing: '写',
   idea: '想',
   cite: '录',
@@ -33,7 +33,8 @@ const KIND_COLORS: Record<ProgressEntryKind, string> = {
   mood: '#c89372',
 }
 
-// 用户可手动新增的 kinds（focus / mood / writing 都从其它途径自动产生）
+// 用户可手动新增的 kinds（focus / mood / writing 都从其它途径自动产生）。
+// experiment 在地学默认语境下表示野外、采样、实验室测量或仪器/样品工作。
 const MANUAL_KINDS: ProgressEntryKind[] = ['read', 'experiment', 'idea', 'cite', 'analysis']
 
 interface DailyLogViewProps {
